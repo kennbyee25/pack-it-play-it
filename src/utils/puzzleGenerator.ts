@@ -95,7 +95,6 @@ interface PlacedPiece {
 function generateSolvedPuzzle(
   binWidth: number,
   binHeight: number,
-  maxPieces: number,
   allowedShapes: PieceShape[]
 ): PlacedPiece[] | null {
   const grid: (string | null)[][] = Array(binHeight)
@@ -106,12 +105,6 @@ function generateSolvedPuzzle(
   let colorIndex = 0;
   
   function solve(): boolean {
-    // Check piece limit
-    if (placedPieces.length >= maxPieces) {
-      // Check if grid is full
-      return findFirstEmpty(grid) === null;
-    }
-    
     const empty = findFirstEmpty(grid);
     if (!empty) {
       return true; // Grid is full!
@@ -161,19 +154,8 @@ function generateSolvedPuzzle(
     return false;
   }
   
-  // Try multiple times with different random orderings
-  for (let attempt = 0; attempt < 10; attempt++) {
-    if (solve()) {
-      return placedPieces;
-    }
-    // Reset for next attempt
-    for (let y = 0; y < binHeight; y++) {
-      for (let x = 0; x < binWidth; x++) {
-        grid[y][x] = null;
-      }
-    }
-    placedPieces.length = 0;
-    colorIndex = 0;
+  if (solve()) {
+    return placedPieces;
   }
   
   return null;
@@ -181,23 +163,23 @@ function generateSolvedPuzzle(
 
 export function generateGame(difficulty: 'easy' | 'medium' | 'hard' = 'medium'): GameState {
   const config = {
-    easy: { width: 6, height: 4, maxPieces: 5, shapes: SHAPES.slice(0, 4) }, // Simple shapes
-    medium: { width: 6, height: 6, maxPieces: 7, shapes: SHAPES.slice(0, 9) }, // Tetrominoes
-    hard: { width: 8, height: 6, maxPieces: 10, shapes: SHAPES }, // All shapes including pentominoes
+    easy: { width: 4, height: 4, shapes: SHAPES.slice(0, 4) }, // Simple shapes, small bin
+    medium: { width: 5, height: 5, shapes: SHAPES.slice(0, 9) }, // Tetrominoes
+    hard: { width: 6, height: 5, shapes: SHAPES }, // All shapes including pentominoes
   };
   
-  const { width, height, maxPieces, shapes } = config[difficulty];
+  const { width, height, shapes } = config[difficulty];
   
   // Generate solved puzzle
-  const solved = generateSolvedPuzzle(width, height, maxPieces, shapes);
+  const solved = generateSolvedPuzzle(width, height, shapes);
   
   if (!solved) {
     // Fallback: try with simpler config
-    const fallbackSolved = generateSolvedPuzzle(6, 4, 5, SHAPES.slice(0, 4));
+    const fallbackSolved = generateSolvedPuzzle(4, 4, SHAPES.slice(0, 4));
     if (!fallbackSolved) {
       throw new Error('Failed to generate puzzle');
     }
-    return createGameState(fallbackSolved, 6, 4);
+    return createGameState(fallbackSolved, 4, 4);
   }
   
   return createGameState(solved, width, height);
