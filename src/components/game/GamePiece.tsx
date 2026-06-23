@@ -4,25 +4,19 @@ import { cn } from '@/lib/utils';
 interface GamePieceProps {
   piece: Piece;
   cellSize: number;
-  isDragging?: boolean;
   isPreview?: boolean;
   isValid?: boolean;
   onDragStart?: (e: React.DragEvent, piece: Piece) => void;
   onDragEnd?: (e: React.DragEvent) => void;
-  isInBin?: boolean;
-  style?: React.CSSProperties;
 }
 
 export function GamePiece({
   piece,
   cellSize,
-  isDragging = false,
   isPreview = false,
   isValid = true,
   onDragStart,
   onDragEnd,
-  isInBin,
-  style,
 }: GamePieceProps) {
   const { shape, color } = piece;
   
@@ -34,15 +28,12 @@ export function GamePiece({
     <div
       className={cn(
         'relative cursor-grab active:cursor-grabbing transition-all duration-150 game-piece',
-        isDragging && 'opacity-50 scale-95',
         isPreview && 'pointer-events-none',
-        isPreview && !isValid && 'opacity-40',
-        isInBin && 'absolute'
+        isPreview && !isValid && 'opacity-40'
       )}
       style={{
         width,
         height,
-        ...style,
       }}
       draggable={!isPreview}
       onDragStart={(e) => onDragStart?.(e, piece)}

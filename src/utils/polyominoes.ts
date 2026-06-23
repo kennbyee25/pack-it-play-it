@@ -124,10 +124,3 @@ export function getAllRotations(shape: PieceShape): PieceShape[] {
   
   return rotations;
 }
-
-// Get shape dimensions
-export function getShapeBounds(cells: ShapeMatrix): { width: number; height: number } {
-  const maxX = Math.max(...cells.map(([x]) => x));
-  const maxY = Math.max(...cells.map(([, y]) => y));
-  return { width: maxX + 1, height: maxY + 1 };
-}
