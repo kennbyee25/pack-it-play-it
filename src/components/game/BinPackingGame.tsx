@@ -6,7 +6,7 @@ import {
   placePiece,
   removePiece,
   calculateEfficiency,
-} from '@/utils/gameGenerator';
+} from '@/utils/puzzleGenerator';
 import { GameBin } from './GameBin';
 import { PiecesTray } from './PiecesTray';
 import { GameStats } from './GameStats';
@@ -48,7 +48,6 @@ export function BinPackingGame() {
   const handleDragStart = useCallback((e: React.DragEvent, piece: Piece) => {
     setDraggingPiece(piece);
     e.dataTransfer.effectAllowed = 'move';
-    // Set a transparent drag image
     const img = new Image();
     img.src = 'data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7';
     e.dataTransfer.setDragImage(img, 0, 0);
@@ -69,7 +68,6 @@ export function BinPackingGame() {
       const x = Math.floor((e.clientX - rect.left) / CELL_SIZE);
       const y = Math.floor((e.clientY - rect.top) / CELL_SIZE);
 
-      // Create a temporary grid without the dragging piece if it was placed
       let testGrid = gameState.grid;
       if (draggingPiece.placed) {
         testGrid = removePiece(gameState.grid, draggingPiece.id);
@@ -94,7 +92,6 @@ export function BinPackingGame() {
     (x: number, y: number) => {
       if (!draggingPiece) return;
 
-      // Remove piece from grid if it was already placed
       let newGrid = gameState.grid;
       if (draggingPiece.placed) {
         newGrid = removePiece(gameState.grid, draggingPiece.id);
@@ -134,7 +131,6 @@ export function BinPackingGame() {
       e.preventDefault();
       if (!draggingPiece || !draggingPiece.placed) return;
 
-      // Remove piece from bin
       const newGrid = removePiece(gameState.grid, draggingPiece.id);
       setGameState((prev) => ({
         ...prev,
@@ -152,20 +148,22 @@ export function BinPackingGame() {
 
   // Check for win condition
   useEffect(() => {
-    if (piecesPlaced === gameState.pieces.length && gameState.pieces.length > 0) {
-      toast.success(`Amazing! You packed all pieces with ${efficiency}% efficiency! 🎉`);
+    if (efficiency === 100 && piecesPlaced === gameState.pieces.length && gameState.pieces.length > 0) {
+      toast.success('Perfect! You solved the puzzle! 🎉', {
+        duration: 5000,
+      });
     }
-  }, [piecesPlaced, gameState.pieces.length, efficiency]);
+  }, [efficiency, piecesPlaced, gameState.pieces.length]);
 
   return (
     <div className="flex flex-col items-center gap-6 p-4 md:p-8">
       {/* Header */}
       <div className="text-center">
         <h1 className="font-display text-3xl md:text-4xl font-bold text-foreground mb-2">
-          Bin Packing Puzzle
+          Polyomino Packing
         </h1>
         <p className="text-muted-foreground">
-          Drag and drop pieces to pack them efficiently!
+          Fit all pieces perfectly into the bin!
         </p>
       </div>
 
@@ -208,7 +206,7 @@ export function BinPackingGame() {
         {/* Bin */}
         <div className="relative">
           <div className="absolute -top-8 left-0 text-xs font-medium text-muted-foreground uppercase tracking-wide">
-            Packing Bin ({gameState.binWidth} × {gameState.binHeight})
+            Bin ({gameState.binWidth} × {gameState.binHeight})
           </div>
           <GameBin
             width={gameState.binWidth}
@@ -240,7 +238,7 @@ export function BinPackingGame() {
       {/* Tips */}
       <div className="flex items-center gap-2 text-sm text-muted-foreground bg-muted/50 rounded-lg px-4 py-2">
         <Sparkles className="w-4 h-4 text-primary" />
-        <span>Tip: Drag pieces back to the tray to remove them from the bin</span>
+        <span>Each puzzle has a perfect solution — fill the bin 100%!</span>
       </div>
     </div>
   );

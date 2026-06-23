@@ -1,7 +1,16 @@
-export interface Piece {
-  id: string;
+// Polyomino shapes represented as array of [x, y] offsets from origin
+export type ShapeMatrix = [number, number][];
+
+export interface PieceShape {
+  name: string;
+  cells: ShapeMatrix;
   width: number;
   height: number;
+}
+
+export interface Piece {
+  id: string;
+  shape: PieceShape;
   color: string;
   placed: boolean;
   x?: number;

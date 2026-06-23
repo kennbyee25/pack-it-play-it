@@ -11,7 +11,7 @@ interface GameBinProps {
   onDrop: (x: number, y: number) => void;
   onDragOver: (e: React.DragEvent) => void;
   onPieceDragStart: (e: React.DragEvent, piece: Piece) => void;
-  onPieceDragEnd: (e: React.DragEvent) => void;
+  onPieceDragEnd: () => void;
   isValidDrop: boolean;
   dropPreview: { x: number; y: number; piece: Piece } | null;
 }
@@ -31,58 +31,79 @@ export function GameBin({
 }: GameBinProps) {
   const handleDrop = (e: React.DragEvent) => {
     e.preventDefault();
-    const rect = e.currentTarget.getBoundingClientRect();
-    const x = Math.floor((e.clientX - rect.left) / cellSize);
-    const y = Math.floor((e.clientY - rect.top) / cellSize);
-    onDrop(x, y);
+    if (dropPreview) {
+      onDrop(dropPreview.x, dropPreview.y);
+    }
   };
 
   const placedPieces = pieces.filter((p) => p.placed && p.x !== undefined && p.y !== undefined);
 
   return (
     <div
-      className={cn(
-        'relative rounded-xl overflow-hidden bg-grid-bg game-grid border-2 transition-colors duration-200',
-        isValidDrop ? 'border-accent' : 'border-border'
-      )}
+      className="relative bg-grid-bg rounded-xl border-4 border-grid-border shadow-xl overflow-hidden"
       style={{
         width: width * cellSize,
         height: height * cellSize,
-        backgroundSize: `${cellSize}px ${cellSize}px`,
       }}
-      onDrop={handleDrop}
       onDragOver={onDragOver}
+      onDrop={handleDrop}
     >
+      {/* Grid lines */}
+      <div className="absolute inset-0 pointer-events-none">
+        {Array.from({ length: height }).map((_, y) =>
+          Array.from({ length: width }).map((_, x) => (
+            <div
+              key={`${x}-${y}`}
+              className={cn(
+                'absolute border border-grid-line/30',
+                grid[y][x] === null && 'bg-grid-empty/50'
+              )}
+              style={{
+                left: x * cellSize,
+                top: y * cellSize,
+                width: cellSize,
+                height: cellSize,
+              }}
+            />
+          ))
+        )}
+      </div>
+
       {/* Drop preview */}
       {dropPreview && (
         <div
-          className={cn(
-            'absolute rounded-lg transition-all duration-100 pointer-events-none',
-            isValidDrop ? 'bg-accent/30 border-2 border-accent' : 'bg-destructive/30 border-2 border-destructive'
-          )}
+          className="absolute pointer-events-none z-10"
           style={{
-            left: dropPreview.x * cellSize + 2,
-            top: dropPreview.y * cellSize + 2,
-            width: dropPreview.piece.width * cellSize - 4,
-            height: dropPreview.piece.height * cellSize - 4,
+            left: dropPreview.x * cellSize,
+            top: dropPreview.y * cellSize,
           }}
-        />
+        >
+          <GamePiece
+            piece={dropPreview.piece}
+            cellSize={cellSize}
+            isPreview
+            isValid={isValidDrop}
+          />
+        </div>
       )}
 
       {/* Placed pieces */}
       {placedPieces.map((piece) => (
-        <GamePiece
+        <div
           key={piece.id}
-          piece={piece}
-          cellSize={cellSize}
-          isInBin
-          onDragStart={onPieceDragStart}
-          onDragEnd={onPieceDragEnd}
+          className="absolute z-20"
           style={{
             left: piece.x! * cellSize,
             top: piece.y! * cellSize,
           }}
-        />
+        >
+          <GamePiece
+            piece={piece}
+            cellSize={cellSize}
+            onDragStart={onPieceDragStart}
+            onDragEnd={onPieceDragEnd}
+          />
+        </div>
       ))}
     </div>
   );

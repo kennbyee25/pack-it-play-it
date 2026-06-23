@@ -5,7 +5,7 @@ interface PiecesTrayProps {
   pieces: Piece[];
   cellSize: number;
   onDragStart: (e: React.DragEvent, piece: Piece) => void;
-  onDragEnd: (e: React.DragEvent) => void;
+  onDragEnd: () => void;
   onDrop: (e: React.DragEvent) => void;
 }
 
@@ -17,32 +17,34 @@ export function PiecesTray({
   onDrop,
 }: PiecesTrayProps) {
   const unplacedPieces = pieces.filter((p) => !p.placed);
-
-  const handleDragOver = (e: React.DragEvent) => {
-    e.preventDefault();
-  };
+  const scaledCellSize = cellSize * 0.75;
 
   return (
     <div
-      className="min-h-[120px] p-4 rounded-xl bg-card border border-border shadow-sm"
-      onDragOver={handleDragOver}
+      className="relative"
+      onDragOver={(e) => e.preventDefault()}
       onDrop={onDrop}
     >
-      <h3 className="font-display font-semibold text-sm text-muted-foreground mb-3 uppercase tracking-wide">
-        Pieces to Pack
-      </h3>
-      <div className="flex flex-wrap gap-2 items-start">
+      <div className="text-xs font-medium text-muted-foreground uppercase tracking-wide mb-3">
+        Pieces ({unplacedPieces.length} remaining)
+      </div>
+      <div
+        className="min-h-[200px] bg-sidebar-bg rounded-xl border-2 border-sidebar-border p-4 flex flex-wrap gap-4 items-start content-start"
+      >
         {unplacedPieces.length === 0 ? (
-          <p className="text-muted-foreground text-sm italic">All pieces placed! 🎉</p>
+          <div className="w-full h-full flex items-center justify-center text-muted-foreground/50 text-sm">
+            All pieces placed! 🎉
+          </div>
         ) : (
           unplacedPieces.map((piece) => (
-            <GamePiece
-              key={piece.id}
-              piece={piece}
-              cellSize={cellSize}
-              onDragStart={onDragStart}
-              onDragEnd={onDragEnd}
-            />
+            <div key={piece.id} className="game-piece">
+              <GamePiece
+                piece={piece}
+                cellSize={scaledCellSize}
+                onDragStart={onDragStart}
+                onDragEnd={onDragEnd}
+              />
+            </div>
           ))
         )}
       </div>

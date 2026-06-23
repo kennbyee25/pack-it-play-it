@@ -5,6 +5,8 @@ interface GamePieceProps {
   piece: Piece;
   cellSize: number;
   isDragging?: boolean;
+  isPreview?: boolean;
+  isValid?: boolean;
   onDragStart?: (e: React.DragEvent, piece: Piece) => void;
   onDragEnd?: (e: React.DragEvent) => void;
   isInBin?: boolean;
@@ -14,36 +16,55 @@ interface GamePieceProps {
 export function GamePiece({
   piece,
   cellSize,
-  isDragging,
+  isDragging = false,
+  isPreview = false,
+  isValid = true,
   onDragStart,
   onDragEnd,
   isInBin,
   style,
 }: GamePieceProps) {
-  const width = piece.width * cellSize - 4;
-  const height = piece.height * cellSize - 4;
-
+  const { shape, color } = piece;
+  
+  // Calculate bounding box
+  const width = shape.width * cellSize;
+  const height = shape.height * cellSize;
+  
   return (
     <div
-      draggable
-      onDragStart={(e) => onDragStart?.(e, piece)}
-      onDragEnd={onDragEnd}
       className={cn(
-        'game-piece animate-pop-in select-none',
-        piece.color,
-        isDragging && 'dragging opacity-80',
+        'relative cursor-grab active:cursor-grabbing transition-all duration-150 game-piece',
+        isDragging && 'opacity-50 scale-95',
+        isPreview && 'pointer-events-none',
+        isPreview && !isValid && 'opacity-40',
         isInBin && 'absolute'
       )}
       style={{
         width,
         height,
-        margin: 2,
         ...style,
       }}
+      draggable={!isPreview}
+      onDragStart={(e) => onDragStart?.(e, piece)}
+      onDragEnd={onDragEnd}
     >
-      <div className="w-full h-full flex items-center justify-center">
-        <div className="w-2 h-2 rounded-full bg-white/30" />
-      </div>
+      {shape.cells.map(([x, y], index) => (
+        <div
+          key={index}
+          className={cn(
+            'absolute rounded-sm border-2 border-white/30 shadow-sm',
+            color,
+            isPreview && isValid && 'animate-pulse',
+            isPreview && !isValid && 'bg-destructive/50'
+          )}
+          style={{
+            left: x * cellSize + 2,
+            top: y * cellSize + 2,
+            width: cellSize - 4,
+            height: cellSize - 4,
+          }}
+        />
+      ))}
     </div>
   );
 }
