@@ -7,7 +7,15 @@ import { Button } from '@/components/ui/button';
 
 // The "one box": an interleaved stream of NP-complete puzzles. Solving one (or
 // skipping) advances to the next game in the schedule — no game-over screen.
-export function EndlessMode({ seed = Date.now() >>> 0 }: { seed?: number }) {
+function readSeed(fallback: number): number {
+  if (typeof window === 'undefined') return fallback;
+  const q = new URLSearchParams(window.location.search).get('seed');
+  const n = q !== null ? Number(q) : NaN;
+  return Number.isFinite(n) ? n >>> 0 : fallback;
+}
+
+export function EndlessMode({ seed: seedProp }: { seed?: number } = {}) {
+  const [seed] = useState(() => seedProp ?? readSeed(Date.now() >>> 0));
   const schedule = useMemo(
     () =>
       buildSchedule(
@@ -30,6 +38,10 @@ export function EndlessMode({ seed = Date.now() >>> 0 }: { seed?: number }) {
 
   const advance = () => setIndex((i) => i + 1);
 
+  // Off by default; ?solve=1 reveals the "Show solution" affordance (used by e2e).
+  const canRevealSolution =
+    typeof window !== 'undefined' && new URLSearchParams(window.location.search).has('solve');
+
   return (
     <div className="flex flex-col items-center gap-4 p-6">
       <div className="flex items-center gap-4 text-sm text-muted-foreground">
@@ -40,6 +52,7 @@ export function EndlessMode({ seed = Date.now() >>> 0 }: { seed?: number }) {
         key={index}
         game={game}
         generated={generated}
+        canRevealSolution={canRevealSolution}
         onSolved={() => setSolvedCount((c) => c + 1)}
       />
       <Button onClick={advance} variant="outline" size="sm">
