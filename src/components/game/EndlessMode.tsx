@@ -1,8 +1,11 @@
-import { useMemo, useState } from 'react';
-import { GAME_IDS, getGame } from '@/games/registry';
+import { useEffect, useMemo, useState } from 'react';
+import { getGame } from '@/games/registry';
 import { buildSchedule } from '@/games/scheduler';
 import { makeRng } from '@/games/rng';
+import { difficultyFor, enabledGameIds, sessionKey } from '@/games/settings';
+import { useGameSettings } from '@/hooks/useGameSettings';
 import { GamePlayer } from './GamePlayer';
+import { SessionSettings } from './SessionSettings';
 import { Button } from '@/components/ui/button';
 
 // The "one box": an interleaved stream of NP-complete puzzles. Solving one (or
@@ -16,16 +19,32 @@ function readSeed(fallback: number): number {
 
 export function EndlessMode({ seed: seedProp }: { seed?: number } = {}) {
   const [seed] = useState(() => seedProp ?? readSeed(Date.now() >>> 0));
+  const { settings, setEnabled, setDifficulty, reset } = useGameSettings();
+  const key = sessionKey(settings);
+
   const schedule = useMemo(
     () =>
       buildSchedule(
-        { gameIds: GAME_IDS, dosePerGame: 8, mode: 'interleaved', maxRunLength: 1 },
+        {
+          gameIds: enabledGameIds(settings),
+          dosePerGame: 8,
+          mode: 'interleaved',
+          maxRunLength: 1,
+          difficultyFor: difficultyFor(settings),
+        },
         makeRng(seed),
       ),
-    [seed],
+    // key captures the schedule-affecting parts of settings.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    [seed, key],
   );
 
   const [index, setIndex] = useState(0);
+
+  // Changing options re-rolls the session: start a fresh stream from puzzle #1.
+  useEffect(() => {
+    setIndex(0);
+  }, [key]);
   const [solvedCount, setSolvedCount] = useState(0);
   const item = schedule[index % schedule.length];
   const game = getGame(item.gameId);
@@ -48,6 +67,12 @@ export function EndlessMode({ seed: seedProp }: { seed?: number } = {}) {
         <span>Puzzle #{index + 1}</span>
         <span aria-label="solved-count">Solved: {solvedCount}</span>
       </div>
+      <SessionSettings
+        settings={settings}
+        onToggle={setEnabled}
+        onDifficulty={setDifficulty}
+        onReset={reset}
+      />
       <GamePlayer
         key={index}
         game={game}

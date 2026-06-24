@@ -1,0 +1,67 @@
+import { test, expect, type Page } from '@playwright/test';
+
+const ALL = ['graph-coloring', 'set-cover', 'hamiltonian', 'three-sat'];
+
+const openOptions = (page: Page) =>
+  page.getByRole('button', { name: /advanced options/i }).click();
+
+// Seed localStorage before the app loads so the rotation is deterministic
+// (avoids clicking through several re-rolling toggles).
+async function seedEnabled(page: Page, enabledIds: string[], difficulty = 1000) {
+  const settings = Object.fromEntries(
+    ALL.map((id) => [id, { enabled: enabledIds.includes(id), difficulty }]),
+  );
+  await page.addInitScript(
+    ([key, value]) => window.localStorage.setItem(key as string, value as string),
+    ['pip.settings', JSON.stringify(settings)],
+  );
+}
+
+test.describe('advanced options (/box)', () => {
+  test('game selection: only enabled games appear in the rotation', async ({ page }) => {
+    await seedEnabled(page, ['graph-coloring']);
+    await page.goto('/box?seed=1');
+
+    for (let i = 0; i < 4; i++) {
+      await expect(page.getByRole('heading', { name: 'Graph Coloring' })).toBeVisible();
+      await page.getByRole('button', { name: /next puzzle/i }).click();
+    }
+  });
+
+  test('difficulty slider updates the size readout via keyboard', async ({ page }) => {
+    await seedEnabled(page, ['graph-coloring']);
+    await page.goto('/box?seed=1');
+    await openOptions(page);
+
+    const slider = page.getByLabel('Graph Coloring difficulty').getByRole('slider');
+    await slider.focus();
+    await page.keyboard.press('Home');
+    await expect(page.getByLabel('Graph Coloring size value')).toHaveText('100');
+    await page.keyboard.press('End');
+    await expect(page.getByLabel('Graph Coloring size value')).toHaveText('2500');
+  });
+
+  test('higher difficulty yields a larger problem', async ({ page }) => {
+    const nodeCount = async (difficulty: number) => {
+      await seedEnabled(page, ['graph-coloring'], difficulty);
+      await page.goto('/box?seed=1');
+      await expect(page.getByRole('heading', { name: 'Graph Coloring' })).toBeVisible();
+      return page.locator('[aria-label^="node-"]').count();
+    };
+    const small = await nodeCount(100);
+    const large = await nodeCount(2500);
+    expect(large).toBeGreaterThan(small);
+  });
+
+  test('settings persist across reload', async ({ page }) => {
+    await page.goto('/box?seed=1');
+    await openOptions(page);
+    const setCover = page.getByRole('checkbox', { name: /enable Set Cover/i });
+    await setCover.click(); // disable
+    await expect(setCover).not.toBeChecked();
+
+    await page.reload();
+    await openOptions(page);
+    await expect(page.getByRole('checkbox', { name: /enable Set Cover/i })).not.toBeChecked();
+  });
+});
