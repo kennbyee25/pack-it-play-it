@@ -6,7 +6,7 @@ test.describe('bin-packing landing (/)', () => {
   test('loads and shows the puzzle', async ({ page }) => {
     await page.goto('/');
     await expect(page.getByRole('heading', { name: /polyomino packing/i })).toBeVisible();
-    await expect(page.getByText('0%')).toBeVisible();
+    await expect(page.getByText('0%', { exact: true })).toBeVisible();
   });
 
   test('switching difficulty regenerates the bin', async ({ page }) => {

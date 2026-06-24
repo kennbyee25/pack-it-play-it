@@ -16,7 +16,12 @@ export default defineConfig({
     trace: 'on-first-retry',
     screenshot: 'only-on-failure',
   },
-  projects: [{ name: 'chromium', use: { ...devices['Desktop Chrome'] } }],
+  projects: [
+    {
+      name: 'chromium',
+      use: { ...devices['Desktop Chrome'], launchOptions: { args: ['--no-sandbox', '--disable-setuid-sandbox'] } },
+    },
+  ],
   webServer: {
     command: `npm run build && npm run preview -- --port ${PORT} --strictPort`,
     url: BASE_URL,
