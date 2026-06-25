@@ -5,18 +5,17 @@ on:
     branches: [main]
   workflow_dispatch:
 
+# Needs write access to push the built site to the gh-pages branch.
 permissions:
-  contents: read
-  pages: write
-  id-token: write
+  contents: write
 
 # One concurrent deploy; don't cancel an in-progress production rollout.
 concurrency:
-  group: pages
+  group: pages-production
   cancel-in-progress: false
 
 jobs:
-  build:
+  deploy:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
@@ -28,7 +27,7 @@ jobs:
 
       - run: npm ci
 
-      - name: Build (with Pages base path)
+      - name: Build (production, served at /pack-it-play-it/)
         env:
           GITHUB_PAGES: "true"
         run: npm run build
@@ -36,18 +35,15 @@ jobs:
       - name: SPA fallback (client-side routing)
         run: cp dist/index.html dist/404.html
 
-      - uses: actions/configure-pages@v5
-
-      - uses: actions/upload-pages-artifact@v3
+      # Publish to the repo root of gh-pages. keep_files preserves the
+      # pr-preview/ subtrees managed by the preview workflow so production
+      # deploys never wipe live PR previews.
+      - name: Publish to gh-pages
+        uses: peaceiris/actions-gh-pages@v4
         with:
-          path: dist
-
-  deploy:
-    needs: build
-    runs-on: ubuntu-latest
-    environment:
-      name: github-pages
-      url: ${{ steps.deployment.outputs.page_url }}
-    steps:
-      - id: deployment
-        uses: actions/deploy-pages@v4
+          github_token: ${{ secrets.GITHUB_TOKEN }}
+          publish_dir: ./dist
+          keep_files: true
+          user_name: github-actions[bot]
+          user_email: github-actions[bot]@users.noreply.github.com
+          commit_message: "deploy: production ${{ github.sha }}"
