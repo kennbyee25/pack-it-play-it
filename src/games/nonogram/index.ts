@@ -143,19 +143,25 @@ export const nonogram: PuzzleGame<NonogramState, NonogramMove> = {
     return rowsMatch && colsMatch;
   },
 
-  // Progress: fraction of cells that are filled (1) out of total cells.
-  // This is a rough proxy; as more cells are filled correctly, progress rises.
-  // Incorrect fills (filling a cell that should be empty) will not lead to solve
-  // because isSolved will fail, but they still increase this metric.
-  // Acceptable for adaptive difficulty signal.
+  // Progress: filled cells as a fraction of the cells the solution requires
+  // filled. The solution only fills the cells dictated by the clues (~half the
+  // grid), so the denominator is the total clue length, not the cell count —
+  // that way a complete solution reads as 100, not ~50.
+  // This is a rough proxy; over-filling is clamped to 100 and incorrect fills
+  // still raise it without solving (isSolved gates the real win). Acceptable as
+  // an adaptive difficulty signal.
   progress(state: NonogramState): number {
-    const totalCells = state.rows * state.cols;
+    const totalRequired = state.rowClues.reduce(
+      (sum, run) => sum + run.reduce((a, b) => a + b, 0),
+      0,
+    );
+    if (totalRequired === 0) return 100; // solution has no filled cells: an empty grid already solves it
     let filled = 0;
     for (let r = 0; r < state.rows; r++) {
       for (let c = 0; c < state.cols; c++) {
         if (state.grid[r][c] === 1) filled++;
       }
     }
-    return Math.round((filled / totalCells) * 100);
+    return Math.min(100, Math.round((filled / totalRequired) * 100));
   },
 };
