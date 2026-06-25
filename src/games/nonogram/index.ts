@@ -1,8 +1,11 @@
 import type { PuzzleGame, Generated, Difficulty } from '../types';
 import type { Rng } from '../rng';
 
-// Nonogram (Picross) - logic-assignment archetype: fill cells so that
-// row/column run-length sequences match the given clues.
+// Nonogram (Picross) - its own `nonogram` archetype so the box routes it to the
+// NonogramBoard renderer. (It started life sharing 'logic-assignment' with
+// 3-SAT, which made GamePlayer render it with AssignmentBoard — that reads
+// state.clauses, which a nonogram has none of, so it threw and blanked the
+// screen whenever a nonogram came up in the endless rotation.)
 export interface NonogramState {
   rows: number;
   cols: number;
@@ -61,7 +64,7 @@ function computeClues(grid: number[][]): { rowClues: number[][]; colClues: numbe
 export const nonogram: PuzzleGame<NonogramState, NonogramMove> = {
   id: 'nonogram',
   name: 'Nonogram',
-  archetype: 'logic-assignment',
+  archetype: 'nonogram',
 
   generate(difficulty: Difficulty, rng: Rng): Generated<NonogramState, NonogramMove> {
     // Determine grid size based on difficulty
