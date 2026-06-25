@@ -6,6 +6,7 @@ import { DIFFICULTY, enabledGameIds } from '@/games/settings';
 import { adaptDifficulty, type SolveMetrics } from '@/games/adaptive';
 import { useGameSettings } from '@/hooks/useGameSettings';
 import { GamePlayer } from './GamePlayer';
+import { PuzzleErrorBoundary } from './PuzzleErrorBoundary';
 import { SessionSettings } from './SessionSettings';
 import { Button } from '@/components/ui/button';
 import { Switch } from '@/components/ui/switch';
@@ -141,17 +142,23 @@ export function EndlessMode({ seed: seedProp }: { seed?: number } = {}) {
         onDifficulty={setDifficulty}
         onReset={reset}
       />
-      <GamePlayer
+      <PuzzleErrorBoundary
         // Remount whenever the displayed game changes identity — not just on
         // advance. Deselecting the current game swaps another in at the same
         // index; reusing the player would run the new game against the old
-        // game's state and crash the tree. Keying on gameId forces a clean mount.
+        // game's state and crash the tree. Keying on gameId forces a clean mount
+        // and also resets the boundary's error state for each new puzzle.
         key={`${item.gameId}:${index}`}
-        game={game}
-        generated={generated}
-        canRevealSolution={canRevealSolution}
-        onSolved={handleSolved}
-      />
+        context={{ gameId: item.gameId, index, difficulty, genSeed }}
+        onSkip={advance}
+      >
+        <GamePlayer
+          game={game}
+          generated={generated}
+          canRevealSolution={canRevealSolution}
+          onSolved={handleSolved}
+        />
+      </PuzzleErrorBoundary>
       <div className="flex items-center gap-4">
         <Button onClick={advance} variant="outline" size="sm">
           Next puzzle <span className="ml-1 text-xs text-muted-foreground">(space)</span>
