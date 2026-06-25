@@ -20,8 +20,18 @@ describe('NonogramBoard (via GamePlayer)', () => {
   it('left-click fills a cell and counts a move', () => {
     render(<GamePlayer game={nonogram} generated={gen()} />);
     expect(screen.getByLabelText('moves')).toHaveTextContent('0 moves');
-    fireEvent.mouseDown(screen.getByLabelText('cell-0-0'), { button: 0 });
+    fireEvent.pointerDown(screen.getByLabelText('cell-0-0'), { button: 0 });
     expect(screen.getByLabelText('moves')).toHaveTextContent('1 moves');
+    expect(screen.getByLabelText('progress')).not.toHaveTextContent(/^0%$/);
+  });
+
+  it('clicking a filled cell again clears it (deselect)', () => {
+    render(<GamePlayer game={nonogram} generated={gen()} />);
+    const cell = screen.getByLabelText('cell-0-0');
+    fireEvent.pointerDown(cell, { button: 0 }); // fill
+    expect(screen.getByLabelText('progress')).not.toHaveTextContent(/^0%$/);
+    fireEvent.pointerDown(cell, { button: 0 }); // clear
+    expect(screen.getByLabelText('progress')).toHaveTextContent(/^0%$/);
   });
 
   it('solves when the known solution is replayed', () => {
@@ -29,5 +39,23 @@ describe('NonogramBoard (via GamePlayer)', () => {
     render(<GamePlayer game={nonogram} generated={gen()} canRevealSolution onSolved={onSolved} />);
     fireEvent.click(screen.getByRole('button', { name: /show solution/i }));
     expect(onSolved).toHaveBeenCalledTimes(1);
+  });
+
+  it('displays the grid size', () => {
+    const g = gen(); // difficulty 1000 -> 7x7
+    render(<GamePlayer game={nonogram} generated={g} />);
+    expect(screen.getByLabelText('grid-size')).toHaveTextContent(
+      `${g.puzzle.rows} × ${g.puzzle.cols}`,
+    );
+  });
+
+  it('crosses off a row/column clue once that line is satisfied', () => {
+    render(<GamePlayer game={nonogram} generated={gen()} canRevealSolution />);
+    // Fresh puzzle: no line is satisfied yet (clues are not crossed off).
+    expect(screen.getByLabelText('row-clue-0').className).not.toContain('line-through');
+    // Replaying the solution satisfies every line.
+    fireEvent.click(screen.getByRole('button', { name: /show solution/i }));
+    expect(screen.getByLabelText('row-clue-0').className).toContain('line-through');
+    expect(screen.getByLabelText('col-clue-0').className).toContain('line-through');
   });
 });
