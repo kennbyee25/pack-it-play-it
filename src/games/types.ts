@@ -7,6 +7,7 @@ export type Archetype =
   | 'graph-select'
   | 'graph-path'
   | 'logic-assignment'
+  | 'integer-programming'
   | 'nonogram';
 
 // A generated instance carries the puzzle the player sees plus the hidden
