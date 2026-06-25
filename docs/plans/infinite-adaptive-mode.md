@@ -8,6 +8,14 @@ single puzzle. We want an **endless mode** that streams puzzles forever and
 **auto-tunes difficulty to the individual player** so they stay in the
 "flow channel" — challenged enough to stay engaged, not so much that they bail.
 
+> **Deeper theory:** the learning-science foundation for "how hard should it be" is the
+> **Optimal Challenge Point** — see [research/optimal-challenge-point.md](../research/optimal-challenge-point.md).
+> Key upgrade it argues for: target **functional** difficulty (skill-relative) rather than a
+> fixed success rate, and graduate from a challenge-band controller to a **ZPDES
+> learning-progress bandit** that picks the next (game × difficulty) maximizing empirical
+> progress — unifying the interleaving scheduler and the difficulty knob. That doc has the
+> staged path from the shipped `adaptive.ts` heuristic to a skill-modeled OCP selector.
+
 This is a well-studied problem. The standard framing is **Dynamic Difficulty
 Adjustment (DDA)** grounded in Csikszentmihalyi's **flow theory**: keep the match
 between player *skill* and task *challenge* inside a narrow band. The conventional

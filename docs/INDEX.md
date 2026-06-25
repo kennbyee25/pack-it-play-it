@@ -25,6 +25,13 @@ trains humans, tests algorithms, and (eventually) trains/tests AI on NP-complete
   skill-rating (Glicko/Elo) dynamic difficulty. *Partially shipped* (`settings.ts`,
   `adaptive.ts`); this is the reference for the full version.
 
+## Research
+
+- **[research/optimal-challenge-point.md](./research/optimal-challenge-point.md)** — the
+  learning-science behind adaptive difficulty: the Challenge Point Framework (functional vs
+  nominal difficulty), ZPDES learning-progress bandits, BKT mastery, desirable difficulties —
+  each mapped to a concrete pip mechanic, with a staged upgrade path for `adaptive.ts`.
+
 ## Analysis: `v0-np-complete-gamebox`
 
 Study of the sibling project ([repo](https://github.com/kennbyee25/v0-np-complete-gamebox))
