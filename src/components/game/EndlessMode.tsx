@@ -3,6 +3,7 @@ import { getGame } from '@/games/registry';
 import { buildSchedule } from '@/games/scheduler';
 import { makeRng } from '@/games/rng';
 import { DIFFICULTY, enabledGameIds } from '@/games/settings';
+import { adaptDifficulty, type SolveMetrics } from '@/games/adaptive';
 import { useGameSettings } from '@/hooks/useGameSettings';
 import { GamePlayer } from './GamePlayer';
 import { SessionSettings } from './SessionSettings';
@@ -65,10 +66,19 @@ export function EndlessMode({ seed: seedProp }: { seed?: number } = {}) {
   // re-randomize — but never just because options re-rendered.
   const generated = useMemo(() => game.generate(difficulty, makeRng(genSeed)), [game, difficulty, genSeed]);
 
+  // Adaptive difficulty change is computed on solve but applied on advance, so it
+  // never disrupts the just-solved puzzle.
+  const pendingAdapt = useRef<{ gameId: string; difficulty: number } | null>(null);
+
   const advance = useCallback(() => {
+    const p = pendingAdapt.current;
+    if (p) {
+      setDifficulty(p.gameId, p.difficulty);
+      pendingAdapt.current = null;
+    }
     setIndex((i) => i + 1);
     if (!deterministic) setRand(randSeed());
-  }, [deterministic]);
+  }, [deterministic, setDifficulty]);
 
   // Auto-advance preference (off in deterministic/e2e mode so tests drive it).
   const [autoNext, setAutoNext] = useState(() => {
@@ -87,13 +97,19 @@ export function EndlessMode({ seed: seedProp }: { seed?: number } = {}) {
   const timer = useRef<ReturnType<typeof setTimeout>>();
   useEffect(() => () => clearTimeout(timer.current), []);
 
-  const handleSolved = useCallback(() => {
-    setSolvedCount((c) => c + 1);
-    if (autoNext) {
-      clearTimeout(timer.current);
-      timer.current = setTimeout(advance, 900);
-    }
-  }, [autoNext, advance]);
+  const handleSolved = useCallback(
+    (metrics: SolveMetrics) => {
+      setSolvedCount((c) => c + 1);
+      // Adaptive challenge: tune THIS game's difficulty based on the solve.
+      const next = adaptDifficulty(difficulty, metrics);
+      if (next !== difficulty) pendingAdapt.current = { gameId: item.gameId, difficulty: next };
+      if (autoNext) {
+        clearTimeout(timer.current);
+        timer.current = setTimeout(advance, 900);
+      }
+    },
+    [autoNext, advance, difficulty, item.gameId],
+  );
 
   // Spacebar advances, unless focus is on an interactive control.
   useEffect(() => {

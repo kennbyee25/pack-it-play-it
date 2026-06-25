@@ -12,7 +12,7 @@ export type GameSettings = Record<string, GameSetting>;
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 type Game = Pick<PuzzleGame<any, any>, 'id'>;
 
-const clampDifficulty = (v: number): number => {
+export const clampDifficulty = (v: number): number => {
   const n = Math.round(v / DIFFICULTY.step) * DIFFICULTY.step;
   return Math.min(DIFFICULTY.max, Math.max(DIFFICULTY.min, n));
 };
