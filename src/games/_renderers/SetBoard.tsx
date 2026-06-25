@@ -1,8 +1,8 @@
-import type { SetCoverState, SetCoverMove } from '../setCover';
 import type { BoardProps } from './types';
 
 // set-cover archetype. Toggle subset cards; covered universe elements light up.
-export function SetBoard({ state, onMove }: BoardProps<SetCoverState, SetCoverMove>) {
+// Accepts any set-game state with universe/subsets/k/selected (+ optional instruction).
+export function SetBoard({ state, onMove }: BoardProps<any, any>) {
   const covered = new Set<number>();
   state.subsets.forEach((s, i) => {
     if (state.selected[i]) s.forEach((e) => covered.add(e));
@@ -12,7 +12,7 @@ export function SetBoard({ state, onMove }: BoardProps<SetCoverState, SetCoverMo
   return (
     <div className="flex flex-col items-center gap-4">
       <p className="text-sm text-muted-foreground">
-        Select ≤ {state.k} subsets whose union covers the whole universe
+        {state.instruction ?? `Select ≤ ${state.k} subsets whose union covers the whole universe`}
       </p>
       <div className="flex flex-wrap gap-2 justify-center max-w-md" aria-label="universe">
         {state.universe.map((e) => (
