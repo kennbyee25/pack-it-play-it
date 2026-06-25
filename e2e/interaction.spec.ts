@@ -1,15 +1,5 @@
-import { test, expect, type Page } from '@playwright/test';
-
-const ALL = ['graph-coloring', 'set-cover', 'hamiltonian', 'three-sat', 'nonogram'];
-async function seedEnabled(page: Page, enabledIds: string[], difficulty = 1000) {
-  const settings = Object.fromEntries(
-    ALL.map((id) => [id, { enabled: enabledIds.includes(id), difficulty }]),
-  );
-  await page.addInitScript(
-    ([k, v]) => window.localStorage.setItem(k as string, v as string),
-    ['pip.settings', JSON.stringify(settings)],
-  );
-}
+import { test, expect } from '@playwright/test';
+import { seedEnabled } from './_helpers';
 
 test.describe('advancing the rotation', () => {
   test('spacebar goes to the next puzzle', async ({ page }) => {

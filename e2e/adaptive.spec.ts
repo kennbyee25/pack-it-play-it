@@ -1,15 +1,8 @@
 import { test, expect, type Page } from '@playwright/test';
+import { seedOnly } from './_helpers';
 
-const ALL = ['graph-coloring', 'set-cover', 'hamiltonian', 'three-sat', 'nonogram'];
-async function seedOnlySetCover(page: Page, difficulty = 1000) {
-  const settings = Object.fromEntries(
-    ALL.map((id) => [id, { enabled: id === 'set-cover', difficulty }]),
-  );
-  await page.addInitScript(
-    ([k, v]) => window.localStorage.setItem(k as string, v as string),
-    ['pip.settings', JSON.stringify(settings)],
-  );
-}
+const seedOnlySetCover = (page: Page, difficulty = 1000) =>
+  seedOnly(page, 'set-cover', difficulty);
 
 const sizeValue = (page: Page) => page.getByLabel('Set Cover size value');
 

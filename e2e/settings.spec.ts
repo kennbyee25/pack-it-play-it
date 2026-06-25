@@ -1,21 +1,8 @@
 import { test, expect, type Page } from '@playwright/test';
-
-const ALL = ['graph-coloring', 'set-cover', 'hamiltonian', 'three-sat', 'nonogram'];
+import { seedEnabled } from './_helpers';
 
 const openOptions = (page: Page) =>
   page.getByRole('button', { name: /advanced options/i }).click();
-
-// Seed localStorage before the app loads so the rotation is deterministic
-// (avoids clicking through several re-rolling toggles).
-async function seedEnabled(page: Page, enabledIds: string[], difficulty = 1000) {
-  const settings = Object.fromEntries(
-    ALL.map((id) => [id, { enabled: enabledIds.includes(id), difficulty }]),
-  );
-  await page.addInitScript(
-    ([key, value]) => window.localStorage.setItem(key as string, value as string),
-    ['pip.settings', JSON.stringify(settings)],
-  );
-}
 
 test.describe('advanced options (/box)', () => {
   test('game selection: only enabled games appear in the rotation', async ({ page }) => {
