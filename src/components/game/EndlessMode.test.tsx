@@ -1,5 +1,5 @@
 import { describe, it, expect, beforeEach } from 'vitest';
-import { render, screen } from '@testing-library/react';
+import { render, screen, fireEvent } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { EndlessMode } from './EndlessMode';
 import { GAMES } from '@/games/registry';
@@ -18,6 +18,13 @@ describe('EndlessMode (integration)', () => {
     const user = userEvent.setup();
     render(<EndlessMode seed={1} />);
     await user.click(screen.getByRole('button', { name: /next puzzle/i }));
+    expect(screen.getByText('Puzzle #2')).toBeInTheDocument();
+  });
+
+  it('advances on spacebar (when focus is not on a control)', () => {
+    render(<EndlessMode seed={1} />);
+    expect(screen.getByText('Puzzle #1')).toBeInTheDocument();
+    fireEvent.keyDown(document.body, { code: 'Space', key: ' ' });
     expect(screen.getByText('Puzzle #2')).toBeInTheDocument();
   });
 

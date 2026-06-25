@@ -53,6 +53,20 @@ test.describe('advanced options (/box)', () => {
     expect(large).toBeGreaterThan(small);
   });
 
+  test('changing difficulty does NOT reset the rotation', async ({ page }) => {
+    await page.goto('/box?seed=1');
+    await page.getByRole('button', { name: /next puzzle/i }).click();
+    await expect(page.getByText('Puzzle #2')).toBeVisible();
+
+    await openOptions(page);
+    const slider = page.getByLabel('Graph Coloring difficulty').getByRole('slider');
+    await slider.focus();
+    await page.keyboard.press('End'); // change a difficulty
+
+    // Rotation position is preserved (only the puzzle's size changes).
+    await expect(page.getByText('Puzzle #2')).toBeVisible();
+  });
+
   test('settings persist across reload', async ({ page }) => {
     await page.goto('/box?seed=1');
     await openOptions(page);

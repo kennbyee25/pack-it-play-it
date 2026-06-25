@@ -38,6 +38,15 @@ describe('hamiltonian', () => {
     for (const m of gen.solution.slice(0, -1)) s = hamiltonian.applyMove(s, m);
     expect(hamiltonian.isSolved(s)).toBe(false);
   });
+
+  it('toggles an edge off when clicked twice', () => {
+    const gen = hamiltonian.generate(1000, makeRng(6));
+    const move = gen.solution[0];
+    const added = hamiltonian.applyMove(gen.puzzle, move);
+    expect(added.chosen.length).toBe(1);
+    const removed = hamiltonian.applyMove(added, move);
+    expect(removed.chosen.length).toBe(0);
+  });
 });
 
 describe('threeSat', () => {

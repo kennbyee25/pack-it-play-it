@@ -67,8 +67,13 @@ export const hamiltonian: PuzzleGame<HamiltonianState, HamiltonianMove> = {
 
   applyMove(state, move) {
     const e = norm(move.edge[0], move.edge[1]);
-    if (state.chosen.some((c) => key(c) === key(e))) return state;
-    return { ...state, chosen: [...state.chosen, e] };
+    const ek = key(e);
+    // Toggle: clicking a chosen edge again removes it.
+    const exists = state.chosen.some((c) => key(c) === ek);
+    return {
+      ...state,
+      chosen: exists ? state.chosen.filter((c) => key(c) !== ek) : [...state.chosen, e],
+    };
   },
 
   isSolved(state) {
