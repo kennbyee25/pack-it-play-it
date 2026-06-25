@@ -16,8 +16,12 @@ const App = () => (
       <Sonner />
       <BrowserRouter basename={import.meta.env.BASE_URL}>
         <Routes>
-          <Route path="/" element={<Index />} />
+          {/* The game box (interleaved NP-complete puzzles) is the default. */}
+          <Route path="/" element={<Box />} />
+          {/* Legacy alias so existing /box links keep working. */}
           <Route path="/box" element={<Box />} />
+          {/* Original bin-packing game — deprecated, kept at its own path for now. */}
+          <Route path="/polyominoes" element={<Index />} />
           {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
           <Route path="*" element={<NotFound />} />
         </Routes>
