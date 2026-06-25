@@ -28,6 +28,15 @@ describe('setCover', () => {
     expect(setCover.isSolved(partial)).toBe(false);
     expect(setCover.progress(partial)).toBeLessThan(100);
   });
+
+  it('toggles a subset off when clicked twice', () => {
+    const gen = setCover.generate(1000, makeRng(4));
+    const move = gen.solution[0];
+    const on = setCover.applyMove(gen.puzzle, move);
+    expect(on.selected[move.subsetIndex]).toBe(true);
+    const off = setCover.applyMove(on, move);
+    expect(off.selected[move.subsetIndex]).toBe(false);
+  });
 });
 
 describe('hamiltonian', () => {

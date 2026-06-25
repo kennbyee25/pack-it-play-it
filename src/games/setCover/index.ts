@@ -67,7 +67,8 @@ export const setCover: PuzzleGame<SetCoverState, SetCoverMove> = {
 
   applyMove(state, move) {
     const selected = [...state.selected];
-    selected[move.subsetIndex] = true;
+    // Toggle: clicking a selected subset again deselects it.
+    selected[move.subsetIndex] = !selected[move.subsetIndex];
     return { ...state, selected };
   },
 

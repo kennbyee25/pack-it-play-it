@@ -67,6 +67,22 @@ test.describe('advanced options (/box)', () => {
     await expect(page.getByText('Puzzle #2')).toBeVisible();
   });
 
+  test('set cover subsets can be deselected and moves are counted', async ({ page }) => {
+    await seedEnabled(page, ['set-cover']);
+    await page.goto('/box?seed=1');
+    await expect(page.getByRole('heading', { name: 'Set Cover' })).toBeVisible();
+    await expect(page.getByLabel('moves')).toHaveText('0 moves');
+
+    const subset = page.getByRole('button', { name: 'subset-0' });
+    await subset.click(); // select
+    await expect(page.getByLabel('moves')).toHaveText('1 moves');
+    await expect(page.getByLabel('progress')).not.toHaveText('0%');
+
+    await subset.click(); // deselect
+    await expect(page.getByLabel('moves')).toHaveText('2 moves');
+    await expect(page.getByLabel('progress')).toHaveText('0%');
+  });
+
   test('settings persist across reload', async ({ page }) => {
     await page.goto('/box?seed=1');
     await openOptions(page);
