@@ -8,6 +8,7 @@ import { SetBoard } from '@/games/_renderers/SetBoard';
 import { PathBoard } from '@/games/_renderers/PathBoard';
 import { AssignmentBoard } from '@/games/_renderers/AssignmentBoard';
 import { NonogramBoard } from '@/games/_renderers/NonogramBoard';
+import { NumberBoard } from '@/games/_renderers/NumberBoard';
 
 /* eslint-disable @typescript-eslint/no-explicit-any */
 function Board({ game, state, onMove }: { game: PuzzleGame<any, any>; state: any; onMove: (m: any) => void }) {
@@ -22,6 +23,8 @@ function Board({ game, state, onMove }: { game: PuzzleGame<any, any>; state: any
       return <AssignmentBoard state={state} onMove={onMove} />;
     case 'nonogram':
       return <NonogramBoard state={state} onMove={onMove} />;
+    case 'number-packing':
+      return <NumberBoard state={state} onMove={onMove} />;
     default:
       return <div>Unsupported game</div>;
   }
