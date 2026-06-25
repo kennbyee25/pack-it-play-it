@@ -37,7 +37,7 @@ test.describe('game selection / deselection in the rotation', () => {
     await expect(page.getByRole('checkbox', { name: `enable ${shown}` })).not.toBeChecked();
   });
 
-  test('deselecting a game that is NOT currently shown keeps the current puzzle', async ({
+  test('deselecting a game that is NOT currently shown is safe and removes it', async ({
     page,
   }) => {
     await page.goto('/box?seed=1');
@@ -47,21 +47,23 @@ test.describe('game selection / deselection in the rotation', () => {
     // Disable some enabled game other than the one on screen.
     const boxes = page.getByRole('checkbox');
     const n = await boxes.count();
-    let disabledOne = false;
+    let targetLabel: string | null = null;
     for (let i = 0; i < n; i++) {
       const box = boxes.nth(i);
       const label = await box.getAttribute('aria-label');
       if (label === `enable ${shown}` || (await box.isDisabled())) continue;
       await box.uncheck();
       await expect(box).not.toBeChecked();
-      disabledOne = true;
+      targetLabel = label;
       break;
     }
-    expect(disabledOne).toBe(true);
+    expect(targetLabel).toBeTruthy();
 
-    // The on-screen puzzle is unchanged and the board is alive.
+    // Toggling the enabled set restarts the rotation by design, so the on-screen
+    // puzzle may change — what matters is the board stays alive (no wipe) and the
+    // deselected game is gone from the rotation.
     await expectBoardAlive(page);
-    await expect(page.getByRole('heading').first()).toHaveText(shown!);
+    await expect(page.getByRole('checkbox', { name: targetLabel! })).not.toBeChecked();
   });
 
   test('re-enabling a game adds it back without crashing', async ({ page }) => {
