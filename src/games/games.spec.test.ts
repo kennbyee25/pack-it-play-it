@@ -4,6 +4,8 @@ import { graphColoring } from './graphColoring';
 import { setCover } from './setCover';
 import { hamiltonian } from './hamiltonian';
 import { threeSat } from './threeSat';
+import { nonogram } from './nonogram';
+import { DIFFICULTY } from './settings';
 import { applySolution } from './types';
 
 // Targeted Given/When/Then cases per archetype (negative paths the shared
@@ -76,5 +78,24 @@ describe('threeSat', () => {
         expect(Math.abs(lit)).toBeLessThanOrEqual(gen.puzzle.numVars);
       }
     }
+  });
+});
+
+describe('nonogram', () => {
+  it('the easiest difficulty is a trivial 3x3, and size grows with difficulty', () => {
+    const easiest = nonogram.generate(DIFFICULTY.min, makeRng(1)).puzzle;
+    expect(easiest.rows).toBe(3);
+    expect(easiest.cols).toBe(3);
+
+    const hardest = nonogram.generate(DIFFICULTY.max, makeRng(1)).puzzle;
+    expect(hardest.rows).toBeGreaterThan(easiest.rows);
+  });
+
+  it('clearing a filled cell (value 0) lowers progress back down', () => {
+    const gen = nonogram.generate(1000, makeRng(4));
+    const filled = nonogram.applyMove(gen.puzzle, { row: 0, col: 0, value: 1 });
+    expect(nonogram.progress(filled)).toBeGreaterThan(0);
+    const cleared = nonogram.applyMove(filled, { row: 0, col: 0, value: 0 });
+    expect(nonogram.progress(cleared)).toBe(0);
   });
 });

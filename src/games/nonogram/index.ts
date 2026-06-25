@@ -17,7 +17,7 @@ export interface NonogramState {
 export interface NonogramMove {
   row: number;
   col: number;
-  value: 1 | 2; // 1 = fill, 2 = mark
+  value: 0 | 1 | 2; // 0 = clear (deselect), 1 = fill, 2 = mark
 }
 
 // Helper: compute run-length clues from a binary grid (1 = filled, 0 = empty)
@@ -67,8 +67,9 @@ export const nonogram: PuzzleGame<NonogramState, NonogramMove> = {
   archetype: 'nonogram',
 
   generate(difficulty: Difficulty, rng: Rng): Generated<NonogramState, NonogramMove> {
-    // Determine grid size based on difficulty
-    const size = Math.max(5, Math.round(5 + difficulty / 200)); // ~5..35
+    // Grid size scales with difficulty. The floor is a trivial 3x3 (so the
+    // easiest setting is genuinely easy) growing to ~13x13 at the top end.
+    const size = Math.max(3, Math.round(3 + difficulty / 250)); // ~3..13
     const rows = size;
     const cols = size;
 
