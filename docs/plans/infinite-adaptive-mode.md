@@ -56,6 +56,18 @@ fewer "gift" placements). Replace the `easy/medium/hard` `config` object in
 `generateGame` with a `difficultyToConfig(D)` function. Each `PuzzleGame` (see the
 NP-complete-games plan) declares its own `difficultyToConfig`.
 
+> **Encapsulation tip from `v0-np-complete-gamebox`.** v0 wraps difficulty→size math in
+> **value objects** (`DifficultyLevel`, `ProblemSize`) instead of scattering `difficulty ===
+> 'easy' ? 3 : …`. Adopt the shape: a per-game `sizeFor(D)` value object makes the adaptive
+> step's effect explicit and testable (kills "primitive obsession"). v0's continuous-less,
+> 4-tier model is *weaker* than this plan's continuous `D` — keep `D`, borrow the encapsulation.
+> See [analysis/v0-integration-backlog.md](../analysis/v0-integration-backlog.md) (P5).
+>
+> **Status note:** the manual/adaptive difficulty machinery described below is now partially
+> **shipped** — `src/games/settings.ts` (continuous per-game difficulty) and
+> `src/games/adaptive.ts` (optimal-challenge adjustment). This plan remains the reference for
+> the full Glicko/skill-rating version.
+
 ### 2. Player skill model — `src/adaptive/rating.ts`
 
 Implement **Glicko-2-lite** (Elo + an RD-style confidence term; full Glicko-2 is

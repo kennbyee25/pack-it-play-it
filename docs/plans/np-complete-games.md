@@ -118,3 +118,21 @@ A registry array drives a game-picker landing page and routes
 1. Extract `PuzzleGame` contract + `GameShell`, port bin-packing (no behavior
    change). 2. Nonogram. 3. Numberlink. 4. Light Up. 5. (stretch) Sudoku, Graph
    Coloring. Ship the engine refactor first so every subsequent game is additive.
+
+## Breadth-fill from `v0-np-complete-gamebox`
+
+The sibling project already has **~18 generators** and **~11 brute-force/random solver pairs**
+covering most of Karp's 21. Fastest path to breadth: **re-express those generators against this
+`PuzzleGame` contract** (keeping our stronger generate-solved-then-strip invariant). Per
+archetype the renderer already exists:
+
+- graph-select (`GraphBoard`): clique, vertex-cover, independent-set, max-cut, feedback-*
+- set (`SetBoard`): set-packing, exact-cover, hitting-set, 3d-matching
+- graph-path (`PathBoard`): steiner-tree, directed-hamiltonian
+- logic (`AssignmentBoard`): integer-programming
+- number (new `NumberBoard`): subset-sum, knapsack, partition, job-sequencing
+
+See [analysis/v0-integration-backlog.md](../analysis/v0-integration-backlog.md) (P2) for the
+per-game mapping and [solver-layer.md](./solver-layer.md) for the companion solver/validator
+port (which also unlocks unique-solution generation). Each game should carry
+**`category` + `reductionFrom` metadata** to support the transfer experiment (MVP3).

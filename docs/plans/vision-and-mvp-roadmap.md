@@ -357,6 +357,13 @@ baseline → the "advance NP-complete solvers" pillar needs rethinking.
 *one* demonstrated downstream use — e.g., replay-verify a solve, or use human-found
 instances as a difficulty oracle.
 
+> **Head start from `v0-np-complete-gamebox`.** The sibling project already implements the
+> *solver* half of this pillar: a `Solver` interface with brute-force + random algorithms per
+> problem and a `SolverResult { iterations, timeMs }` telemetry shape. Porting that
+> ([solver-layer.md](./solver-layer.md)) gives MVP5 its baseline solvers and metrics for free,
+> and the same brute-force enumerator powers unique-solution generation. See
+> [analysis/v0-integration-backlog.md](../analysis/v0-integration-backlog.md) (P0).
+
 ```mermaid
 flowchart LR
     PLAY["applyMove events"] --> LOG["trace store (move, ts, state hash)"]
