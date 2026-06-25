@@ -18,6 +18,28 @@ const CELL = 30; // px
 const MINOR = 'hsl(var(--border))';
 const MAJOR = 'hsl(var(--muted-foreground))';
 
+// Run-lengths of the filled (value 1) cells in a line — marks/blanks are gaps.
+function runs(line: number[]): number[] {
+  const out: number[] = [];
+  let count = 0;
+  for (const v of line) {
+    if (v === 1) count++;
+    else if (count > 0) {
+      out.push(count);
+      count = 0;
+    }
+  }
+  if (count > 0) out.push(count);
+  return out;
+}
+
+// A line is "satisfied" when its filled runs exactly match its clue (an empty
+// clue, shown as 0, is satisfied by a line with nothing filled).
+function satisfied(clue: number[], line: number[]): boolean {
+  const r = runs(line);
+  return r.length === clue.length && clue.every((n, i) => n === r[i]);
+}
+
 export function NonogramBoard({ state, onMove }: BoardProps<NonogramState, NonogramMove>) {
   const { rows, cols, rowClues, colClues, grid } = state;
   const gridRef = useRef<HTMLDivElement>(null);
@@ -58,48 +80,66 @@ export function NonogramBoard({ state, onMove }: BoardProps<NonogramState, Nonog
     return [Number(cell.dataset.r), Number(cell.dataset.c)];
   };
 
+  // Which rows/columns currently match their clue — their clues get crossed off.
+  const rowDone = rowClues.map((clue, r) => satisfied(clue, grid[r]));
+  const colDone = colClues.map((clue, c) => satisfied(clue, grid.map((row) => row[c])));
+  const clueDone = 'opacity-40 line-through';
+
   return (
-    <div
-      ref={gridRef}
-      className="inline-grid select-none"
-      style={{
-        gridTemplateColumns: `max-content repeat(${cols}, ${CELL}px)`,
-        gridTemplateRows: `max-content repeat(${rows}, ${CELL}px)`,
-        touchAction: 'none', // let us drive drag-paint instead of scrolling
-      }}
-      onPointerMove={(e) => {
-        if (paintValue.current === null) return;
-        const c = cellAt(e.clientX, e.clientY);
-        if (c) paint(c[0], c[1]);
-      }}
-      onPointerUp={end}
-      onPointerCancel={end}
-      onLostPointerCapture={end}
-      onContextMenu={(e) => e.preventDefault()}
-    >
-      {/* Top-left corner (empty) */}
-      <div />
+    <div className="flex flex-col items-center gap-2">
+      <span className="text-xs text-muted-foreground tabular-nums" aria-label="grid-size">
+        {rows} × {cols}
+      </span>
 
-      {/* Column clues (top): each column's runs stacked vertically. */}
-      {colClues.map((clues, colIdx) => (
-        <div
-          key={`col-${colIdx}`}
-          className="flex flex-col items-center justify-end px-1 pb-1 text-xs leading-tight text-muted-foreground tabular-nums"
-        >
-          {(clues.length ? clues : [0]).map((num, i) => (
-            <span key={i}>{num}</span>
-          ))}
-        </div>
-      ))}
+      <div
+        ref={gridRef}
+        className="inline-grid select-none"
+        style={{
+          gridTemplateColumns: `max-content repeat(${cols}, ${CELL}px)`,
+          gridTemplateRows: `max-content repeat(${rows}, ${CELL}px)`,
+          touchAction: 'none', // let us drive drag-paint instead of scrolling
+        }}
+        onPointerMove={(e) => {
+          if (paintValue.current === null) return;
+          const c = cellAt(e.clientX, e.clientY);
+          if (c) paint(c[0], c[1]);
+        }}
+        onPointerUp={end}
+        onPointerCancel={end}
+        onLostPointerCapture={end}
+        onContextMenu={(e) => e.preventDefault()}
+      >
+        {/* Top-left corner (empty) */}
+        <div />
 
-      {/* Each puzzle row: leading row-clue cell, then the cells. */}
-      {Array.from({ length: rows }, (_, r) => (
-        <Fragment key={`row-${r}`}>
-          <div className="flex items-center justify-end gap-1 pr-2 text-xs leading-tight text-muted-foreground tabular-nums">
-            {(rowClues[r].length ? rowClues[r] : [0]).map((num, i) => (
+        {/* Column clues (top): each column's runs stacked vertically. */}
+        {colClues.map((clues, colIdx) => (
+          <div
+            key={`col-${colIdx}`}
+            aria-label={`col-clue-${colIdx}`}
+            className={`flex flex-col items-center justify-end px-1 pb-1 text-xs leading-tight text-muted-foreground tabular-nums ${
+              colDone[colIdx] ? clueDone : ''
+            }`}
+          >
+            {(clues.length ? clues : [0]).map((num, i) => (
               <span key={i}>{num}</span>
             ))}
           </div>
+        ))}
+
+        {/* Each puzzle row: leading row-clue cell, then the cells. */}
+        {Array.from({ length: rows }, (_, r) => (
+          <Fragment key={`row-${r}`}>
+            <div
+              aria-label={`row-clue-${r}`}
+              className={`flex items-center justify-end gap-1 pr-2 text-xs leading-tight text-muted-foreground tabular-nums ${
+                rowDone[r] ? clueDone : ''
+              }`}
+            >
+              {(rowClues[r].length ? rowClues[r] : [0]).map((num, i) => (
+                <span key={i}>{num}</span>
+              ))}
+            </div>
 
           {Array.from({ length: cols }, (_, c) => {
             const v = grid[r][c];
@@ -136,8 +176,9 @@ export function NonogramBoard({ state, onMove }: BoardProps<NonogramState, Nonog
               </div>
             );
           })}
-        </Fragment>
-      ))}
+          </Fragment>
+        ))}
+      </div>
     </div>
   );
 }

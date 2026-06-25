@@ -40,4 +40,22 @@ describe('NonogramBoard (via GamePlayer)', () => {
     fireEvent.click(screen.getByRole('button', { name: /show solution/i }));
     expect(onSolved).toHaveBeenCalledTimes(1);
   });
+
+  it('displays the grid size', () => {
+    const g = gen(); // difficulty 1000 -> 7x7
+    render(<GamePlayer game={nonogram} generated={g} />);
+    expect(screen.getByLabelText('grid-size')).toHaveTextContent(
+      `${g.puzzle.rows} × ${g.puzzle.cols}`,
+    );
+  });
+
+  it('crosses off a row/column clue once that line is satisfied', () => {
+    render(<GamePlayer game={nonogram} generated={gen()} canRevealSolution />);
+    // Fresh puzzle: no line is satisfied yet (clues are not crossed off).
+    expect(screen.getByLabelText('row-clue-0').className).not.toContain('line-through');
+    // Replaying the solution satisfies every line.
+    fireEvent.click(screen.getByRole('button', { name: /show solution/i }));
+    expect(screen.getByLabelText('row-clue-0').className).toContain('line-through');
+    expect(screen.getByLabelText('col-clue-0').className).toContain('line-through');
+  });
 });
