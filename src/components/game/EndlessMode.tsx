@@ -142,7 +142,11 @@ export function EndlessMode({ seed: seedProp }: { seed?: number } = {}) {
         onReset={reset}
       />
       <GamePlayer
-        key={index}
+        // Remount whenever the displayed game changes identity — not just on
+        // advance. Deselecting the current game swaps another in at the same
+        // index; reusing the player would run the new game against the old
+        // game's state and crash the tree. Keying on gameId forces a clean mount.
+        key={`${item.gameId}:${index}`}
         game={game}
         generated={generated}
         canRevealSolution={canRevealSolution}
