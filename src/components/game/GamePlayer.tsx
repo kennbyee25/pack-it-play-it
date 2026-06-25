@@ -7,6 +7,7 @@ import { GraphBoard } from '@/games/_renderers/GraphBoard';
 import { SetBoard } from '@/games/_renderers/SetBoard';
 import { PathBoard } from '@/games/_renderers/PathBoard';
 import { AssignmentBoard } from '@/games/_renderers/AssignmentBoard';
+import { NonogramBoard } from '@/games/_renderers/NonogramBoard';
 
 /* eslint-disable @typescript-eslint/no-explicit-any */
 function Board({ game, state, onMove }: { game: PuzzleGame<any, any>; state: any; onMove: (m: any) => void }) {
@@ -19,6 +20,8 @@ function Board({ game, state, onMove }: { game: PuzzleGame<any, any>; state: any
       return <PathBoard state={state} onMove={onMove} />;
     case 'logic-assignment':
       return <AssignmentBoard state={state} onMove={onMove} />;
+    case 'nonogram':
+      return <NonogramBoard state={state} onMove={onMove} />;
     default:
       return <div>Unsupported game</div>;
   }

@@ -1,6 +1,6 @@
 import { test, expect, type Page } from '@playwright/test';
 
-const ALL = ['graph-coloring', 'set-cover', 'hamiltonian', 'three-sat'];
+const ALL = ['graph-coloring', 'set-cover', 'hamiltonian', 'three-sat', 'nonogram'];
 async function seedOnlySetCover(page: Page, difficulty = 1000) {
   const settings = Object.fromEntries(
     ALL.map((id) => [id, { enabled: id === 'set-cover', difficulty }]),

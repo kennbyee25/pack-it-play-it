@@ -1,6 +1,6 @@
 import { test, expect, type Page } from '@playwright/test';
 
-const ALL = ['graph-coloring', 'set-cover', 'hamiltonian', 'three-sat'];
+const ALL = ['graph-coloring', 'set-cover', 'hamiltonian', 'three-sat', 'nonogram'];
 
 const openOptions = (page: Page) =>
   page.getByRole('button', { name: /advanced options/i }).click();

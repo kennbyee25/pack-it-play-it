@@ -6,7 +6,8 @@ export type Archetype =
   | 'set-cover'
   | 'graph-select'
   | 'graph-path'
-  | 'logic-assignment';
+  | 'logic-assignment'
+  | 'nonogram';
 
 // A generated instance carries the puzzle the player sees plus the hidden
 // solution used to (a) guarantee solvability and (b) drive the conformance tests.
