@@ -1,4 +1,5 @@
 import { test, expect, type Page } from '@playwright/test';
+import { seedOnly } from './_helpers';
 
 // Selecting/deselecting games must safely add/remove that game from the rotation
 // without ever wiping the screen (regression: deselecting the currently-shown
@@ -78,14 +79,7 @@ test.describe('game selection / deselection in the rotation', () => {
 
   test('the last remaining game is locked on (rotation never empties)', async ({ page }) => {
     // Seed a state where only one game is enabled.
-    const ids = ['graph-coloring', 'set-cover', 'hamiltonian', 'three-sat', 'nonogram'];
-    const settings = Object.fromEntries(
-      ids.map((id) => [id, { enabled: id === 'graph-coloring', difficulty: 1000 }]),
-    );
-    await page.addInitScript(
-      ([k, v]) => window.localStorage.setItem(k as string, v as string),
-      ['pip.settings', JSON.stringify(settings)],
-    );
+    await seedOnly(page, 'graph-coloring');
     await page.goto('/box?seed=1');
     await expectBoardAlive(page);
     await openOptions(page);
