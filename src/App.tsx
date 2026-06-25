@@ -3,7 +3,6 @@ import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Routes, Route } from "react-router-dom";
-import Index from "./pages/Index";
 import Box from "./pages/Box";
 import NotFound from "./pages/NotFound";
 
@@ -20,8 +19,6 @@ const App = () => (
           <Route path="/" element={<Box />} />
           {/* Legacy alias so existing /box links keep working. */}
           <Route path="/box" element={<Box />} />
-          {/* Original bin-packing game — deprecated, kept at its own path for now. */}
-          <Route path="/polyominoes" element={<Index />} />
           {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
           <Route path="*" element={<NotFound />} />
         </Routes>

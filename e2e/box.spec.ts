@@ -2,20 +2,6 @@ import { test, expect } from '@playwright/test';
 
 // Observable end-to-end behavior of the real shipped site.
 
-test.describe('bin-packing (deprecated, /polyominoes)', () => {
-  test('loads and shows the puzzle', async ({ page }) => {
-    await page.goto('/polyominoes');
-    await expect(page.getByRole('heading', { name: /polyomino packing/i })).toBeVisible();
-    await expect(page.getByText('0%', { exact: true })).toBeVisible();
-  });
-
-  test('switching difficulty regenerates the bin', async ({ page }) => {
-    await page.goto('/polyominoes');
-    await page.getByRole('button', { name: /^hard$/i }).click();
-    await expect(page.getByText(/bin \(6 × 5\)/i)).toBeVisible();
-  });
-});
-
 test.describe('the game box (default /, alias /box)', () => {
   test('is the default landing at /', async ({ page }) => {
     await page.goto('/');
