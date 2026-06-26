@@ -29,6 +29,7 @@ const literalTrue = (lit: number, assignment: (boolean | null)[]): boolean | nul
 export const threeSat: PuzzleGame<SatState, SatMove> = {
   id: 'three-sat',
   name: '3-SAT',
+  description: 'Set each variable true or false so that every row has at least one true value.',
   archetype: 'logic-assignment',
 
   generate(difficulty: Difficulty, rng: Rng): Generated<SatState, SatMove> {
@@ -81,5 +82,34 @@ export const threeSat: PuzzleGame<SatState, SatMove> = {
       c.some((lit) => literalTrue(lit, state.assignment) === true),
     ).length;
     return Math.round((satisfied / state.clauses.length) * 100);
+  },
+
+  countSolutions(puzzle: SatState, max: number): number {
+    const { numVars, clauses } = puzzle;
+    const assignment: (boolean | null)[] = Array(numVars + 1).fill(null);
+    let count = 0;
+
+    // Returns true when count has reached `max` (early exit signal).
+    function bt(v: number): boolean {
+      if (v > numVars) {
+        if (clauses.every((c) => c.some((lit) => literalTrue(lit, assignment) === true))) {
+          count++;
+        }
+        return count >= max;
+      }
+      for (const val of [true, false]) {
+        assignment[v] = val;
+        // Prune: if any clause is already fully falsified, skip this branch.
+        const falsified = clauses.some((c) =>
+          c.every((lit) => literalTrue(lit, assignment) === false),
+        );
+        if (!falsified && bt(v + 1)) return true;
+      }
+      assignment[v] = null;
+      return false;
+    }
+
+    bt(1);
+    return count;
   },
 };

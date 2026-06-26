@@ -4,7 +4,9 @@ import { buildSchedule } from '@/games/scheduler';
 import { makeRng } from '@/games/rng';
 import { DIFFICULTY, enabledGameIds } from '@/games/settings';
 import { adaptDifficulty, type SolveMetrics } from '@/games/adaptive';
+import { generateUnique } from '@/games/uniqueness';
 import { useGameSettings } from '@/hooks/useGameSettings';
+import { useSessionOptions } from '@/hooks/useSessionOptions';
 import { GamePlayer } from './GamePlayer';
 import { SessionSettings } from './SessionSettings';
 import { Button } from '@/components/ui/button';
@@ -29,6 +31,7 @@ export function EndlessMode({ seed: seedProp }: { seed?: number } = {}) {
   const deterministic = fixedSeed !== undefined;
 
   const { settings, setEnabled, setDifficulty, reset } = useGameSettings();
+  const { options: sessionOptions, setOption: setSessionOption } = useSessionOptions();
   const enabledIds = enabledGameIds(settings);
   const enabledKey = enabledIds.join(',');
 
@@ -48,11 +51,14 @@ export function EndlessMode({ seed: seedProp }: { seed?: number } = {}) {
   const [index, setIndex] = useState(0);
   const [rand, setRand] = useState(() => (deterministic ? 0 : randSeed()));
   const [solvedCount, setSolvedCount] = useState(0);
+  const [score, setScore] = useState(0);
+  const currentSolvedRef = useRef(false);
 
   // Changing the enabled set restarts the rotation (and re-randomizes); a
   // difficulty change does NOT land here.
   useEffect(() => {
     setIndex(0);
+    currentSolvedRef.current = false;
     if (!deterministic) setRand(randSeed());
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [enabledKey]);
@@ -62,15 +68,22 @@ export function EndlessMode({ seed: seedProp }: { seed?: number } = {}) {
   const difficulty = settings[item.gameId]?.difficulty ?? DIFFICULTY.default;
   const genSeed = (deterministic ? (fixedSeed as number) : rand) + index * 7919;
 
-  // Regenerate on advance, on difficulty change (same rotation position), or on
-  // re-randomize — but never just because options re-rendered.
-  const generated = useMemo(() => game.generate(difficulty, makeRng(genSeed)), [game, difficulty, genSeed]);
+  // Regenerate on advance, difficulty change, re-randomize, or uniqueSolution toggle.
+  const generated = useMemo(
+    () => generateUnique(game, difficulty, makeRng(genSeed), { unique: sessionOptions.uniqueSolution }),
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    [game, difficulty, genSeed, sessionOptions.uniqueSolution],
+  );
 
   // Adaptive difficulty change is computed on solve but applied on advance, so it
   // never disrupts the just-solved puzzle.
   const pendingAdapt = useRef<{ gameId: string; difficulty: number } | null>(null);
 
   const advance = useCallback(() => {
+    if (!currentSolvedRef.current) {
+      setScore((s) => s - 50);
+    }
+    currentSolvedRef.current = false;
     const p = pendingAdapt.current;
     if (p) {
       setDifficulty(p.gameId, p.difficulty);
@@ -99,7 +112,9 @@ export function EndlessMode({ seed: seedProp }: { seed?: number } = {}) {
 
   const handleSolved = useCallback(
     (metrics: SolveMetrics) => {
+      currentSolvedRef.current = true;
       setSolvedCount((c) => c + 1);
+      setScore((s) => s + 50);
       // Adaptive challenge: tune THIS game's difficulty based on the solve.
       const next = adaptDifficulty(difficulty, metrics);
       if (next !== difficulty) pendingAdapt.current = { gameId: item.gameId, difficulty: next };
@@ -134,12 +149,15 @@ export function EndlessMode({ seed: seedProp }: { seed?: number } = {}) {
       <div className="flex items-center gap-4 text-sm text-muted-foreground">
         <span>Puzzle #{index + 1}</span>
         <span aria-label="solved-count">Solved: {solvedCount}</span>
+        <span aria-label="score" className={score < 0 ? 'text-destructive' : score > 0 ? 'text-piece-teal' : ''}>Score: {score}</span>
       </div>
       <SessionSettings
         settings={settings}
         onToggle={setEnabled}
         onDifficulty={setDifficulty}
         onReset={reset}
+        sessionOptions={sessionOptions}
+        onSessionOption={setSessionOption}
       />
       <GamePlayer
         key={index}

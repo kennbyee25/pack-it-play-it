@@ -26,6 +26,7 @@ function configFor(d: Difficulty) {
 export const graphColoring: PuzzleGame<ColoringState, ColorMove> = {
   id: 'graph-coloring',
   name: 'Graph Coloring',
+  description: 'Color each node so that no two directly connected nodes share the same color.',
   archetype: 'graph-select',
 
   generate(difficulty: Difficulty, rng: Rng): Generated<ColoringState, ColorMove> {
@@ -59,6 +60,39 @@ export const graphColoring: PuzzleGame<ColoringState, ColorMove> = {
   isSolved(state) {
     if (state.colors.some((c) => c === null)) return false;
     return state.edges.every(([a, b]) => state.colors[a] !== state.colors[b]);
+  },
+
+  countSolutions(puzzle: ColoringState, max: number): number {
+    const { n, k, edges } = puzzle;
+    const adj: boolean[][] = Array.from({ length: n }, () => new Array(n).fill(false));
+    for (const [a, b] of edges) { adj[a][b] = true; adj[b][a] = true; }
+    const colors = new Array<number>(n).fill(-1);
+    let count = 0;
+
+    // Symmetry breaking: colors must be introduced in ascending order.
+    // i.e. color c is only ever assigned if c-1 has already been used.
+    // This canonicalizes away label permutations.
+    function bt(node: number, maxColorUsed: number): boolean {
+      if (node === n) {
+        count++;
+        return count >= max;
+      }
+      const colorLimit = Math.min(k - 1, maxColorUsed + 1);
+      for (let c = 0; c <= colorLimit; c++) {
+        let ok = true;
+        for (let j = 0; j < node; j++) {
+          if (adj[node][j] && colors[j] === c) { ok = false; break; }
+        }
+        if (!ok) continue;
+        colors[node] = c;
+        if (bt(node + 1, Math.max(maxColorUsed, c))) return true;
+        colors[node] = -1;
+      }
+      return false;
+    }
+
+    bt(0, -1);
+    return count;
   },
 
   progress(state) {

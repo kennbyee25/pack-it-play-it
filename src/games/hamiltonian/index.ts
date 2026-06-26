@@ -24,6 +24,7 @@ function configFor(d: Difficulty) {
 export const hamiltonian: PuzzleGame<HamiltonianState, HamiltonianMove> = {
   id: 'hamiltonian',
   name: 'Hamiltonian Circuit',
+  description: 'Connect edges to form a single loop that visits every node exactly once.',
   archetype: 'graph-path',
 
   generate(difficulty: Difficulty, rng: Rng): Generated<HamiltonianState, HamiltonianMove> {
@@ -111,5 +112,45 @@ export const hamiltonian: PuzzleGame<HamiltonianState, HamiltonianMove> = {
 
   progress(state) {
     return Math.min(100, Math.round((state.chosen.length / state.n) * 100));
+  },
+
+  countSolutions(puzzle: HamiltonianState, max: number): number {
+    const { n, edges } = puzzle;
+    const adj: number[][] = Array.from({ length: n }, () => []);
+    for (const [a, b] of edges) { adj[a].push(b); adj[b].push(a); }
+    let count = 0;
+
+    // DFS: build a Hamiltonian path starting at node 0.
+    // When path length = n and we can close back to 0: count++.
+    // To avoid counting each undirected cycle twice (forward/backward),
+    // enforce that the first step from 0 is smaller than the last node before closing.
+    const visited = new Array(n).fill(false);
+    const path: number[] = [0];
+    visited[0] = true;
+
+    function bt(): boolean {
+      const cur = path[path.length - 1];
+      if (path.length === n) {
+        // Close the cycle: last node must be adjacent to 0.
+        if (adj[cur].includes(0) && path[1] < cur) {
+          count++;
+          return count >= max;
+        }
+        return false;
+      }
+      for (const nb of adj[cur]) {
+        if (!visited[nb]) {
+          visited[nb] = true;
+          path.push(nb);
+          if (bt()) return true;
+          path.pop();
+          visited[nb] = false;
+        }
+      }
+      return false;
+    }
+
+    bt();
+    return count;
   },
 };

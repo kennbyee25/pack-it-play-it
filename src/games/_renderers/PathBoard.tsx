@@ -32,7 +32,7 @@ export function PathBoard({ state, onMove }: BoardProps<HamiltonianState, Hamilt
     }
     const e = edgeOf(selected, i);
     if (available.has(key(e))) onMove({ edge: e }); // toggle if a real edge connects them
-    setSelected(null);
+    setSelected(i); // keep the second node selected as the new "from" node
   };
 
   return (

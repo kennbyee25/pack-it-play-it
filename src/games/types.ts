@@ -24,6 +24,7 @@ export type Difficulty = number;
 export interface PuzzleGame<TState, TMove> {
   readonly id: string;
   readonly name: string;
+  readonly description: string;
   readonly archetype: Archetype;
   // Build a guaranteed-solvable instance at difficulty D (generate-solved-then-strip).
   generate(difficulty: Difficulty, rng: Rng): Generated<TState, TMove>;
@@ -33,6 +34,9 @@ export interface PuzzleGame<TState, TMove> {
   isSolved(state: TState): boolean;
   // 0..100 progress proxy; 0 on a fresh puzzle, 100 when solved.
   progress(state: TState): number;
+  // Optional: count valid solutions up to `max`, stopping early once max is
+  // reached. Used by generateUnique to reject puzzles with multiple solutions.
+  countSolutions?(puzzle: TState, max: number): number;
 }
 
 // Replay a solution onto a fresh puzzle — shared by tests and (later) hint/replay UI.

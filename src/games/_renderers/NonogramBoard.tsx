@@ -44,7 +44,10 @@ export function NonogramBoard({ state, onMove }: BoardProps<NonogramState, Nonog
       </div>
 
       {/* Puzzle grid */}
-      <div className="absolute top-[40px] left-[40px] bottom-0 right-0 grid grid-cols-[repeat(${cols},minmax(28px,1fr))] grid-rows-[repeat(${rows},minmax(28px,1fr))] gap-0.5 outline outline-offset-0 outline-1 outline-border">
+      <div
+        className="absolute top-[40px] left-[40px] bottom-0 right-0 border border-border"
+        style={{ display: 'grid', gridTemplateColumns: `repeat(${cols}, minmax(28px, 1fr))`, gridTemplateRows: `repeat(${rows}, minmax(28px, 1fr))` }}
+      >
         {Array.from({ length: rows }, (_, r) =>
           Array.from({ length: cols }, (_, c) => (
             <div
@@ -54,7 +57,7 @@ export function NonogramBoard({ state, onMove }: BoardProps<NonogramState, Nonog
                 e.preventDefault();
                 handleCellClick(r, c, e);
               }}
-              className={`flex items-center justify-center text-xs font-mono ${
+              className={`flex items-center justify-center text-xs font-mono border border-border/50 ${
                 grid[r][c] === 1
                   ? 'bg-piece-teal'
                   : grid[r][c] === 2

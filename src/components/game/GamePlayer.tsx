@@ -95,8 +95,11 @@ export function GamePlayer({ game, generated, onSolved, canRevealSolution }: Gam
 
   return (
     <div className="flex flex-col items-center gap-4 p-4">
-      <div className="flex items-center gap-3">
+      <div className="flex flex-col items-center gap-1">
         <h2 className="font-display text-xl font-bold">{game.name}</h2>
+        <p className="text-xs text-muted-foreground text-center">{game.description}</p>
+      </div>
+      <div className="flex items-center gap-3">
         <span className="text-sm text-muted-foreground" aria-label="progress">{progress}%</span>
         <span className="text-sm text-muted-foreground" aria-label="moves">{moves} moves</span>
         <span className="text-sm text-muted-foreground tabular-nums" aria-label="timer">{seconds}s</span>

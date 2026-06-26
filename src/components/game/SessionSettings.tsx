@@ -1,8 +1,9 @@
 import { useState } from 'react';
 import { GAMES } from '@/games/registry';
-import { DIFFICULTY, enabledGameIds, type GameSettings } from '@/games/settings';
+import { DIFFICULTY, enabledGameIds, type GameSettings, type SessionOptions } from '@/games/settings';
 import { Checkbox } from '@/components/ui/checkbox';
 import { Slider } from '@/components/ui/slider';
+import { Switch } from '@/components/ui/switch';
 import { Button } from '@/components/ui/button';
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible';
 import { ChevronDown, Settings2 } from 'lucide-react';
@@ -12,11 +13,13 @@ interface SessionSettingsProps {
   onToggle: (id: string, on: boolean) => void;
   onDifficulty: (id: string, value: number) => void;
   onReset: () => void;
+  sessionOptions: SessionOptions;
+  onSessionOption: <K extends keyof SessionOptions>(key: K, value: SessionOptions[K]) => void;
 }
 
 // Advanced options: per-game enable + raw difficulty (problem size). Presentational;
-// state lives in EndlessMode via useGameSettings.
-export function SessionSettings({ settings, onToggle, onDifficulty, onReset }: SessionSettingsProps) {
+// state lives in EndlessMode via useGameSettings / useSessionOptions.
+export function SessionSettings({ settings, onToggle, onDifficulty, onReset, sessionOptions, onSessionOption }: SessionSettingsProps) {
   const [open, setOpen] = useState(false);
   const enabledCount = enabledGameIds(settings).length;
 
@@ -34,6 +37,18 @@ export function SessionSettings({ settings, onToggle, onDifficulty, onReset }: S
 
       <CollapsibleContent>
         <div className="mt-2 rounded-xl border border-border bg-card p-4 flex flex-col gap-4">
+          <label className="flex items-center justify-between text-sm font-medium">
+            <span>
+              Unique solution
+              <span className="ml-2 text-xs font-normal text-muted-foreground">only puzzles with one answer</span>
+            </span>
+            <Switch
+              checked={sessionOptions.uniqueSolution}
+              aria-label="unique solution"
+              onCheckedChange={(v) => onSessionOption('uniqueSolution', v)}
+            />
+          </label>
+          <hr className="border-border" />
           <p className="text-xs text-muted-foreground">
             Pick which games appear and set each one's problem size.
           </p>

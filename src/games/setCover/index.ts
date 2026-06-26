@@ -23,6 +23,7 @@ function configFor(d: Difficulty) {
 export const setCover: PuzzleGame<SetCoverState, SetCoverMove> = {
   id: 'set-cover',
   name: 'Set Cover',
+  description: 'Pick as few groups as possible so that every item appears in at least one chosen group.',
   archetype: 'set-cover',
 
   generate(difficulty: Difficulty, rng: Rng): Generated<SetCoverState, SetCoverMove> {
@@ -88,5 +89,38 @@ export const setCover: PuzzleGame<SetCoverState, SetCoverMove> = {
       if (state.selected[i]) s.forEach((e) => covered.add(e));
     });
     return Math.round((covered.size / state.universe.length) * 100);
+  },
+
+  countSolutions(puzzle: SetCoverState, max: number): number {
+    const { universe, subsets, k } = puzzle;
+    const n = subsets.length;
+    let count = 0;
+
+    // Returns true when count reaches `max`.
+    function bt(idx: number, selected: number, covered: Set<number>): boolean {
+      if (selected > k) return false;
+      if (covered.size === universe.length) {
+        count++;
+        return count >= max;
+      }
+      if (idx === n) return false;
+
+      // Prune: even selecting all remaining subsets can't cover everything.
+      const reachable = new Set(covered);
+      for (let i = idx; i < n; i++) subsets[i].forEach((e) => reachable.add(e));
+      if (reachable.size < universe.length) return false;
+
+      // Include subsets[idx].
+      const added: number[] = [];
+      subsets[idx].forEach((e) => { if (!covered.has(e)) { covered.add(e); added.push(e); } });
+      if (bt(idx + 1, selected + 1, covered)) return true;
+      added.forEach((e) => covered.delete(e));
+
+      // Exclude subsets[idx].
+      return bt(idx + 1, selected, covered);
+    }
+
+    bt(0, 0, new Set());
+    return count;
   },
 };
