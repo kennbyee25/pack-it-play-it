@@ -1,5 +1,6 @@
 import type { PuzzleGame, Generated, Difficulty } from '../types';
 import type { Rng } from '../rng';
+import { toggleSelected } from '../_shared/selection';
 
 export interface SubsetSumItem {
   value: number;
@@ -69,11 +70,7 @@ export const subsetSum: PuzzleGame<SubsetSumState, SubsetSumMove> = {
     return { puzzle, solution };
   },
 
-  applyMove(state, move) {
-    const selected = [...state.selected];
-    selected[move.itemIndex] = !selected[move.itemIndex];
-    return { ...state, selected };
-  },
+  applyMove: (state, move) => toggleSelected(state, move.itemIndex),
 
   isSolved(state) {
     if (!state.selected.some(Boolean)) return false;

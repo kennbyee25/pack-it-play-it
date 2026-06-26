@@ -1,5 +1,6 @@
 import type { PuzzleGame, Generated, Difficulty } from '../types';
 import type { Rng } from '../rng';
+import { normEdge as norm, edgeKeyOf as key } from '../_shared/graph';
 
 // Undirected Hamiltonian Circuit (graph-path archetype): pick edges forming one
 // cycle that visits every node exactly once.
@@ -12,8 +13,6 @@ export interface HamiltonianMove {
   edge: [number, number];
 }
 
-const norm = (a: number, b: number): [number, number] => (a < b ? [a, b] : [b, a]);
-const key = (e: [number, number]) => `${e[0]}-${e[1]}`;
 
 function configFor(d: Difficulty) {
   const n = Math.max(5, Math.round(5 + d / 250)); // ~5..15

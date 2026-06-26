@@ -1,5 +1,6 @@
 import type { PuzzleGame, Generated, Difficulty } from '../types';
 import type { Rng } from '../rng';
+import { toggleSelected } from '../_shared/selection';
 
 export interface KnapsackItem {
   value: number;
@@ -78,11 +79,7 @@ export const knapsack: PuzzleGame<KnapsackState, KnapsackMove> = {
     return { puzzle, solution };
   },
 
-  applyMove(state, move) {
-    const selected = [...state.selected];
-    selected[move.itemIndex] = !selected[move.itemIndex];
-    return { ...state, selected };
-  },
+  applyMove: (state, move) => toggleSelected(state, move.itemIndex),
 
   isSolved(state) {
     const totalWeight = state.items.reduce((s, item, i) => s + (state.selected[i] ? item.weight : 0), 0);

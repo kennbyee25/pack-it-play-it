@@ -1,5 +1,7 @@
 import type { PuzzleGame, Generated, Difficulty } from '../types';
 import type { Rng } from '../rng';
+import { toggleSelected } from '../_shared/selection';
+import { edgeKey, edgeAccumulator } from '../_shared/graph';
 
 export interface CliqueState {
   n: number;
@@ -19,8 +21,6 @@ function configFor(d: Difficulty) {
   return { k, n, extraEdges };
 }
 
-const norm = (a: number, b: number): [number, number] => (a < b ? [a, b] : [b, a]);
-const edgeKey = (a: number, b: number) => { const [x, y] = norm(a, b); return `${x}-${y}`; };
 
 export const clique: PuzzleGame<CliqueState, CliqueMove> = {
   id: 'clique',
@@ -32,18 +32,13 @@ export const clique: PuzzleGame<CliqueState, CliqueMove> = {
     const allNodes = rng.shuffle(Array.from({ length: n }, (_, i) => i));
     const cliqueNodes = new Set(allNodes.slice(0, k));
 
-    const seen = new Set<string>();
-    const edges: [number, number][] = [];
-    const addEdge = (a: number, b: number) => {
-      const key = edgeKey(a, b);
-      if (!seen.has(key)) { seen.add(key); edges.push(norm(a, b)); }
-    };
+    const acc = edgeAccumulator();
 
     // Plant the clique — all k*(k-1)/2 edges.
     const cliqueArr = [...cliqueNodes];
     for (let i = 0; i < cliqueArr.length; i++) {
       for (let j = i + 1; j < cliqueArr.length; j++) {
-        addEdge(cliqueArr[i], cliqueArr[j]);
+        acc.add(cliqueArr[i], cliqueArr[j]);
       }
     }
 
@@ -55,21 +50,21 @@ export const clique: PuzzleGame<CliqueState, CliqueMove> = {
       tries++;
       const a = rng.int(n);
       const b = rng.int(n);
-      if (a !== b && !seen.has(edgeKey(a, b))) {
+      if (a !== b && !acc.has(a, b)) {
         // Avoid completing another k-clique by restricting edges among non-clique only when safe
-        addEdge(a, b);
+        acc.add(a, b);
         added++;
       }
     }
 
     // Extra non-clique edges to ensure some decoy connectivity
     for (let i = 0; i < nonClique.length - 1 && added < extraEdges + nonClique.length; i++) {
-      if (rng.next() < 0.4) addEdge(nonClique[i], nonClique[i + 1]);
+      if (rng.next() < 0.4) acc.add(nonClique[i], nonClique[i + 1]);
     }
 
     const puzzle: CliqueState = {
       n,
-      edges: rng.shuffle(edges),
+      edges: rng.shuffle(acc.edges),
       selected: Array(n).fill(false),
       k,
       instruction: `Select exactly ${k} nodes that are all connected to each other`,
@@ -78,11 +73,7 @@ export const clique: PuzzleGame<CliqueState, CliqueMove> = {
     return { puzzle, solution };
   },
 
-  applyMove(state, move) {
-    const selected = [...state.selected];
-    selected[move.node] = !selected[move.node];
-    return { ...state, selected };
-  },
+  applyMove: (state, move) => toggleSelected(state, move.node),
 
   isSolved(state) {
     const sel = state.selected.map((s, i) => (s ? i : -1)).filter((i) => i >= 0);

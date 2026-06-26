@@ -1,5 +1,6 @@
 import type { PuzzleGame, Generated, Difficulty } from '../types';
 import type { Rng } from '../rng';
+import { toggleSelected } from '../_shared/selection';
 
 export interface ThreeDMatchingState {
   universe: number[];
@@ -70,11 +71,7 @@ export const threeDMatching: PuzzleGame<ThreeDMatchingState, ThreeDMatchingMove>
     return { puzzle, solution };
   },
 
-  applyMove(state, move) {
-    const selected = [...state.selected];
-    selected[move.subsetIndex] = !selected[move.subsetIndex];
-    return { ...state, selected };
-  },
+  applyMove: (state, move) => toggleSelected(state, move.subsetIndex),
 
   isSolved(state) {
     const selectedIndices = state.selected

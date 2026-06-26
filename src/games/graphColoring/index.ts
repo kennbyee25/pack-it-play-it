@@ -1,5 +1,6 @@
 import type { PuzzleGame, Generated, Difficulty } from '../types';
 import type { Rng } from '../rng';
+import { edgeKey } from '../_shared/graph';
 
 // Chromatic Number (graph-select archetype): color nodes so no edge joins two
 // nodes of the same color, using at most k colors.
@@ -14,7 +15,6 @@ export interface ColorMove {
   color: number;
 }
 
-const edgeKey = (a: number, b: number) => (a < b ? `${a}-${b}` : `${b}-${a}`);
 
 function configFor(d: Difficulty) {
   const n = Math.max(4, Math.round(4 + d / 250)); // ~4..14 nodes

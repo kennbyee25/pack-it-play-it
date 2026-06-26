@@ -1,5 +1,6 @@
 import type { PuzzleGame, Generated, Difficulty } from '../types';
 import type { Rng } from '../rng';
+import { toggleSelected } from '../_shared/selection';
 
 export interface PartitionItem {
   value: number;
@@ -72,11 +73,7 @@ export const partition: PuzzleGame<PartitionState, PartitionMove> = {
     return { puzzle, solution };
   },
 
-  applyMove(state, move) {
-    const selected = [...state.selected];
-    selected[move.itemIndex] = !selected[move.itemIndex];
-    return { ...state, selected };
-  },
+  applyMove: (state, move) => toggleSelected(state, move.itemIndex),
 
   isSolved(state) {
     const sum = state.items.reduce((s, item, i) => s + (state.selected[i] ? item.value : 0), 0);

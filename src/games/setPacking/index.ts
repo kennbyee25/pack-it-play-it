@@ -1,5 +1,6 @@
 import type { PuzzleGame, Generated, Difficulty } from '../types';
 import type { Rng } from '../rng';
+import { toggleSelected } from '../_shared/selection';
 
 export interface SetPackingState {
   universe: number[];
@@ -68,11 +69,7 @@ export const setPacking: PuzzleGame<SetPackingState, SetPackingMove> = {
     return { puzzle, solution };
   },
 
-  applyMove(state, move) {
-    const selected = [...state.selected];
-    selected[move.subsetIndex] = !selected[move.subsetIndex];
-    return { ...state, selected };
-  },
+  applyMove: (state, move) => toggleSelected(state, move.subsetIndex),
 
   isSolved(state) {
     const selectedIndices = state.selected.map((v: boolean, i: number) => [v, i] as [boolean, number]).filter(([v]) => v).map(([, i]) => i);

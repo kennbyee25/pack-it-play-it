@@ -1,5 +1,6 @@
 import type { PuzzleGame, Generated, Difficulty } from '../types';
 import type { Rng } from '../rng';
+import { toggleSelected } from '../_shared/selection';
 
 export interface ExactCoverState {
   universe: number[];
@@ -63,11 +64,7 @@ export const exactCover: PuzzleGame<ExactCoverState, ExactCoverMove> = {
     return { puzzle, solution };
   },
 
-  applyMove(state, move) {
-    const selected = [...state.selected];
-    selected[move.subsetIndex] = !selected[move.subsetIndex];
-    return { ...state, selected };
-  },
+  applyMove: (state, move) => toggleSelected(state, move.subsetIndex),
 
   isSolved(state) {
     const selectedCount = state.selected.filter(Boolean).length;
