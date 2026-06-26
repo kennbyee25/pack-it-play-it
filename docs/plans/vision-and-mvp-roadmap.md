@@ -113,6 +113,21 @@ prose *is* the spec — each maps to a test file as we did for the bin-packing e
 
 ## MVP 0 — Measurable Difficulty & Skill
 
+> **Status (2026-06-26): ✅ instrumentation shipped + A2 gate passing for 2/3 games.**
+> Implemented in `src/games/skill/`: an Elo/Glicko-lite `estimator.ts` (`expectedScore`,
+> `updateSkill`, `selectDifficulty` inversion), an outcome `scorer.ts` (∈[0,1]), and a
+> `simulate.ts` harness (Spearman ρ, log-loss, monotonicity + convergence sims). 15 tests.
+> Key move: the bounded **random solver is the constant-ability player**, so monotonicity is
+> tested against *real* generators — non-circular.
+>
+> **Results:** the A2 kill-gate (ρ ≤ −0.7 between difficulty and empirical success) **passes
+> for set-cover (≈ −0.99) and subset-sum (≈ −0.99)**. **3-SAT fails the gate** — success stays
+> ~100→80% because satisfiable instances have many models, so the random solver barely feels
+> the knob (same root cause as its ~0% uniqueness). The instrument did its job: it flags 3-SAT
+> for generator/calibration work. The synthetic-player sims confirm the estimator converges
+> (skill error < 120 across true skills 300–1400, RD shrinks) and predicts outcomes below the
+> 0.5-baseline log-loss. **Next:** calibrate/fix the 3-SAT knob; then MVP 2 cross-game scale.
+
 **Bet (A2 feasibility):** A single NP-complete game can be parameterized so difficulty
 is *monotonic* with player success, and we can estimate player skill on a stable scale
 that *predicts the next puzzle's outcome better than chance*.
