@@ -1,5 +1,12 @@
 # Plan: Additional NP-Complete Puzzle Games
 
+> **Status (2026-06-26): ✅ executed — historical.** This plan is done. The
+> `PuzzleGame` contract, `GameShell`, archetype renderers, and the auto-registry all
+> shipped, and **19 games** now ride the contract (the Karp-21 breadth-fill). The
+> bin-packing refactor steps below are superseded — polyomino bin-packing was
+> *removed* (#4), not ported. Kept for design rationale and the contract design.
+> Current roster + next steps live in [../INDEX.md](../INDEX.md).
+
 ## Context
 
 `pack-it-play-it` today ships a single game: polyomino bin-packing (an instance
