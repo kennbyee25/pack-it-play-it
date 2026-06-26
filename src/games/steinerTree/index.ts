@@ -1,6 +1,6 @@
 import type { PuzzleGame, Generated, Difficulty } from '../types';
 import type { Rng } from '../rng';
-import { normEdge as norm } from '../_shared/graph';
+import { normEdge as norm, edgeKeyOf, edgeAccumulator } from '../_shared/graph';
 
 // Steiner Tree (graph-path archetype): connect all terminal nodes using a subset
 // of available edges. Non-terminal (Steiner) nodes may be used as intermediate.
@@ -15,7 +15,6 @@ export interface SteinerTreeMove {
   edge: [number, number];
 }
 
-const ekey = (e: [number, number]) => `${e[0]}-${e[1]}`;
 
 function configFor(d: Difficulty) {
   const n = Math.max(5, Math.round(5 + d / 300));
@@ -34,17 +33,7 @@ export const steinerTree: PuzzleGame<SteinerTreeState, SteinerTreeMove> = {
     const allNodes = Array.from({ length: n }, (_, i) => i);
     const terminals = rng.shuffle(allNodes).slice(0, terminalCount);
 
-    const seen = new Set<string>();
-    const plantedEdges: [number, number][] = [];
-
-    const addEdge = (a: number, b: number) => {
-      const e = norm(a, b);
-      const k = ekey(e);
-      if (!seen.has(k)) {
-        seen.add(k);
-        plantedEdges.push(e);
-      }
-    };
+    const acc = edgeAccumulator();
 
     // Build a tree connecting all terminals via a chain, sometimes through Steiner nodes.
     const shuffledTerminals = rng.shuffle([...terminals]);
@@ -54,14 +43,15 @@ export const steinerTree: PuzzleGame<SteinerTreeState, SteinerTreeMove> = {
       const to = shuffledTerminals[i + 1];
       if (steinerNodes.length > 0 && rng.next() < 0.5) {
         const mid = rng.pick(steinerNodes);
-        addEdge(from, mid);
-        addEdge(mid, to);
+        acc.add(from, mid);
+        acc.add(mid, to);
       } else {
-        addEdge(from, to);
+        acc.add(from, to);
       }
     }
 
-    const solution: SteinerTreeMove[] = plantedEdges.map((edge) => ({ edge }));
+    // The planted tree (snapshot before decoys) is the solution.
+    const solution: SteinerTreeMove[] = acc.edges.map((edge) => ({ edge }));
 
     // Add decoy edges.
     let tries = 0;
@@ -70,21 +60,15 @@ export const steinerTree: PuzzleGame<SteinerTreeState, SteinerTreeMove> = {
       tries++;
       const a = rng.int(n);
       const b = rng.int(n);
-      if (a !== b && !seen.has(ekey(norm(a, b)))) {
-        addEdge(a, b);
+      if (a !== b && !acc.has(a, b)) {
+        acc.add(a, b);
         added++;
       }
     }
 
-    const allEdges: [number, number][] = [];
-    for (const k of seen) {
-      const [a, b] = k.split('-').map(Number);
-      allEdges.push([a, b]);
-    }
-
     const puzzle: SteinerTreeState = {
       n,
-      edges: rng.shuffle(allEdges),
+      edges: rng.shuffle(acc.edges),
       chosen: [],
       terminals,
       directed: false,
@@ -94,13 +78,13 @@ export const steinerTree: PuzzleGame<SteinerTreeState, SteinerTreeMove> = {
   },
 
   applyMove(state, move) {
-    const ek = ekey(norm(move.edge[0], move.edge[1]));
-    const exists = state.chosen.some((c) => ekey(c) === ek);
+    const ek = edgeKeyOf(norm(move.edge[0], move.edge[1]));
+    const exists = state.chosen.some((c) => edgeKeyOf(c) === ek);
     const normalizedEdge = norm(move.edge[0], move.edge[1]);
     return {
       ...state,
       chosen: exists
-        ? state.chosen.filter((c) => ekey(c) !== ek)
+        ? state.chosen.filter((c) => edgeKeyOf(c) !== ek)
         : [...state.chosen, normalizedEdge],
     };
   },

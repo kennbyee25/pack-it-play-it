@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { toggleSelected } from './selection';
+import { toggleSelected, pickedIndices, selectionCount } from './selection';
 
 describe('toggleSelected', () => {
   it('flips the boolean at the given index', () => {
@@ -19,5 +19,19 @@ describe('toggleSelected', () => {
   it('preserves other state fields', () => {
     const s = { selected: [false], n: 7, label: 'x' };
     expect(toggleSelected(s, 0)).toEqual({ selected: [true], n: 7, label: 'x' });
+  });
+});
+
+describe('pickedIndices', () => {
+  it('returns the indices that are selected, in order', () => {
+    expect(pickedIndices([true, false, true, true])).toEqual([0, 2, 3]);
+    expect(pickedIndices([false, false])).toEqual([]);
+  });
+});
+
+describe('selectionCount', () => {
+  it('counts selected entries', () => {
+    expect(selectionCount([true, false, true])).toBe(2);
+    expect(selectionCount([])).toBe(0);
   });
 });

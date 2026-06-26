@@ -6,3 +6,12 @@ export function toggleSelected<S extends { selected: boolean[] }>(state: S, inde
   selected[index] = !selected[index];
   return { ...state, selected };
 }
+
+// The indices that are currently selected — several verifiers/progress
+// functions reconstructed this with the same map(v?i:-1).filter(>=0) dance.
+export const pickedIndices = (selected: readonly boolean[]): number[] =>
+  selected.reduce<number[]>((acc, on, i) => (on ? (acc.push(i), acc) : acc), []);
+
+// How many are selected.
+export const selectionCount = (selected: readonly boolean[]): number =>
+  selected.reduce((n, on) => (on ? n + 1 : n), 0);

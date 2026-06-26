@@ -15,19 +15,25 @@ export const edgeKey = (a: number, b: number): string => {
 };
 export const edgeKeyOf = (e: Edge): string => edgeKey(e[0], e[1]);
 
-// Accumulate a deduplicated undirected edge list — replaces the seen-Set +
-// addEdge closure several generators hand-rolled.
-export function edgeAccumulator() {
+// Directed variants — orientation is significant (directed Hamiltonian).
+export const dirKey = (a: number, b: number): string => `${a}->${b}`;
+export const dirKeyOf = (e: Edge): string => dirKey(e[0], e[1]);
+
+// Accumulate a deduplicated edge list — replaces the seen-Set + addEdge closure
+// several generators hand-rolled. `directed` keeps orientation; otherwise edges
+// are normalized so (a,b) === (b,a).
+export function edgeAccumulator(directed = false) {
   const seen = new Set<string>();
   const edges: Edge[] = [];
+  const keyFor = directed ? dirKey : edgeKey;
   return {
     add(a: number, b: number): void {
-      const k = edgeKey(a, b);
+      const k = keyFor(a, b);
       if (seen.has(k)) return;
       seen.add(k);
-      edges.push(normEdge(a, b));
+      edges.push(directed ? [a, b] : normEdge(a, b));
     },
-    has: (a: number, b: number): boolean => seen.has(edgeKey(a, b)),
+    has: (a: number, b: number): boolean => seen.has(keyFor(a, b)),
     get edges(): Edge[] {
       return edges;
     },

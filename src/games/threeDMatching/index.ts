@@ -1,6 +1,6 @@
 import type { PuzzleGame, Generated, Difficulty } from '../types';
 import type { Rng } from '../rng';
-import { toggleSelected } from '../_shared/selection';
+import { toggleSelected, pickedIndices } from '../_shared/selection';
 
 export interface ThreeDMatchingState {
   universe: number[];
@@ -74,9 +74,7 @@ export const threeDMatching: PuzzleGame<ThreeDMatchingState, ThreeDMatchingMove>
   applyMove: (state, move) => toggleSelected(state, move.subsetIndex),
 
   isSolved(state) {
-    const selectedIndices = state.selected
-      .map((v: boolean, i: number) => (v ? i : -1))
-      .filter((i: number) => i >= 0);
+    const selectedIndices = pickedIndices(state.selected);
     if (selectedIndices.length !== state.k) return false;
     const elementCount = new Map<number, number>();
     for (const i of selectedIndices) {
@@ -89,9 +87,7 @@ export const threeDMatching: PuzzleGame<ThreeDMatchingState, ThreeDMatchingMove>
   },
 
   progress(state) {
-    const selectedIndices = state.selected
-      .map((v: boolean, i: number) => (v ? i : -1))
-      .filter((i: number) => i >= 0);
+    const selectedIndices = pickedIndices(state.selected);
     if (selectedIndices.length === 0) return 0;
     const elementCount = new Map<number, number>();
     for (const i of selectedIndices) {

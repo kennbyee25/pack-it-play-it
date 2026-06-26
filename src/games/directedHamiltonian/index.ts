@@ -1,5 +1,6 @@
 import type { PuzzleGame, Generated, Difficulty } from '../types';
 import type { Rng } from '../rng';
+import { edgeAccumulator, dirKeyOf } from '../_shared/graph';
 
 // Directed Hamiltonian Circuit (graph-path archetype): find a directed cycle
 // visiting every node exactly once. Edges are ordered pairs (a→b).
@@ -13,7 +14,6 @@ export interface DirectedHamiltonianMove {
   edge: [number, number];
 }
 
-const dkey = (e: [number, number]) => `${e[0]}->${e[1]}`;
 
 function configFor(d: Difficulty) {
   const n = Math.max(5, Math.round(5 + d / 250));
@@ -30,18 +30,7 @@ export const directedHamiltonian: PuzzleGame<DirectedHamiltonianState, DirectedH
     const { n, extraEdges } = configFor(difficulty);
     const order = rng.shuffle(Array.from({ length: n }, (_, i) => i));
 
-    const seen = new Set<string>();
-    const edges: [number, number][] = [];
-
-    const addEdge = (from: number, to: number) => {
-      if (from !== to) {
-        const k = dkey([from, to]);
-        if (!seen.has(k)) {
-          seen.add(k);
-          edges.push([from, to]);
-        }
-      }
-    };
+    const acc = edgeAccumulator(true);
 
     // Plant the directed cycle along the shuffled order.
     const cycle: [number, number][] = [];
@@ -49,7 +38,7 @@ export const directedHamiltonian: PuzzleGame<DirectedHamiltonianState, DirectedH
       const from = order[i];
       const to = order[(i + 1) % n];
       cycle.push([from, to]);
-      addEdge(from, to);
+      acc.add(from, to);
     }
 
     // Add decoy directed edges.
@@ -59,15 +48,15 @@ export const directedHamiltonian: PuzzleGame<DirectedHamiltonianState, DirectedH
       tries++;
       const from = rng.int(n);
       const to = rng.int(n);
-      if (from !== to && !seen.has(dkey([from, to]))) {
-        addEdge(from, to);
+      if (from !== to && !acc.has(from, to)) {
+        acc.add(from, to);
         added++;
       }
     }
 
     const puzzle: DirectedHamiltonianState = {
       n,
-      edges: rng.shuffle(edges),
+      edges: rng.shuffle(acc.edges),
       chosen: [],
       directed: true,
     };
@@ -76,12 +65,12 @@ export const directedHamiltonian: PuzzleGame<DirectedHamiltonianState, DirectedH
   },
 
   applyMove(state, move) {
-    const ek = dkey(move.edge);
-    const exists = state.chosen.some((c) => dkey(c) === ek);
+    const ek = dirKeyOf(move.edge);
+    const exists = state.chosen.some((c) => dirKeyOf(c) === ek);
     return {
       ...state,
       chosen: exists
-        ? state.chosen.filter((c) => dkey(c) !== ek)
+        ? state.chosen.filter((c) => dirKeyOf(c) !== ek)
         : [...state.chosen, move.edge],
     };
   },
@@ -89,8 +78,8 @@ export const directedHamiltonian: PuzzleGame<DirectedHamiltonianState, DirectedH
   isSolved(state) {
     const { n, chosen, edges } = state;
     if (chosen.length !== n) return false;
-    const available = new Set(edges.map(dkey));
-    if (!chosen.every((e) => available.has(dkey(e)))) return false;
+    const available = new Set(edges.map(dirKeyOf));
+    if (!chosen.every((e) => available.has(dirKeyOf(e)))) return false;
     // Every node must have in-degree 1 and out-degree 1.
     const inDeg = Array(n).fill(0);
     const outDeg = Array(n).fill(0);

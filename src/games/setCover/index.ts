@@ -1,6 +1,6 @@
 import type { PuzzleGame, Generated, Difficulty } from '../types';
 import type { Rng } from '../rng';
-import { toggleSelected } from '../_shared/selection';
+import { toggleSelected, selectionCount } from '../_shared/selection';
 
 // Set Cover (set-cover archetype): choose at most k subsets whose union is the
 // whole universe.
@@ -69,7 +69,7 @@ export const setCover: PuzzleGame<SetCoverState, SetCoverMove> = {
   applyMove: (state, move) => toggleSelected(state, move.subsetIndex),
 
   isSolved(state) {
-    const count = state.selected.filter(Boolean).length;
+    const count = selectionCount(state.selected);
     if (count > state.k) return false;
     const covered = new Set<number>();
     state.subsets.forEach((s, i) => {
