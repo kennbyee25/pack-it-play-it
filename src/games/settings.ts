@@ -1,6 +1,6 @@
 import type { PuzzleGame } from './types';
 
-export const DIFFICULTY = { min: 100, max: 2500, step: 50, default: 1000 } as const;
+export const DIFFICULTY = { min: 100, max: 2500, step: 50, default: 100 } as const;
 
 export interface GameSetting {
   enabled: boolean;

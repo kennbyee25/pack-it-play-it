@@ -7,33 +7,29 @@ const seedOnlySetCover = (page: Page, difficulty = 1000) =>
 const sizeValue = (page: Page) => page.getByLabel('Set Cover size value');
 
 test.describe('adaptive difficulty', () => {
-  test('a quick optimal solve raises the difficulty', async ({ page }) => {
+  test('a quick solve raises the difficulty by one step', async ({ page }) => {
     await seedOnlySetCover(page, 1000);
     await page.goto('/box?solve=1&seed=2');
     await page.getByRole('button', { name: /advanced options/i }).click();
     await expect(sizeValue(page)).toHaveText('1000');
 
-    // Show solution replays the optimal moves instantly -> optimal + quick.
+    // Show solution solves instantly -> quick -> harder.
     await page.getByRole('button', { name: /show solution/i }).click();
     await expect(page.getByLabel('solved', { exact: true })).toBeVisible();
     await page.getByRole('button', { name: /next puzzle/i }).click();
 
-    await expect(sizeValue(page)).toHaveText('1250');
+    await expect(sizeValue(page)).toHaveText('1050');
   });
 
-  test('a solve with wasted moves lowers the difficulty', async ({ page }) => {
+  test('skipping a puzzle without solving lowers the difficulty', async ({ page }) => {
     await seedOnlySetCover(page, 1000);
-    await page.goto('/box?solve=1&seed=2');
+    await page.goto('/box?seed=2');
     await page.getByRole('button', { name: /advanced options/i }).click();
     await expect(sizeValue(page)).toHaveText('1000');
 
-    // Two wasted moves (select then deselect) => more than optimal moves.
-    await page.getByRole('button', { name: 'subset-0' }).click();
-    await page.getByRole('button', { name: 'subset-0' }).click();
-    await page.getByRole('button', { name: /show solution/i }).click();
-    await expect(page.getByLabel('solved', { exact: true })).toBeVisible();
+    // Advance without solving -> skip -> easier.
     await page.getByRole('button', { name: /next puzzle/i }).click();
 
-    await expect(sizeValue(page)).toHaveText('750');
+    await expect(sizeValue(page)).toHaveText('950');
   });
 });

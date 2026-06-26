@@ -3,7 +3,7 @@ import { getGame } from '@/games/registry';
 import { buildSchedule } from '@/games/scheduler';
 import { makeRng } from '@/games/rng';
 import { DIFFICULTY, enabledGameIds } from '@/games/settings';
-import { adaptDifficulty, type SolveMetrics } from '@/games/adaptive';
+import { adaptDifficulty, easeDifficulty, type SolveMetrics } from '@/games/adaptive';
 import { useGameSettings } from '@/hooks/useGameSettings';
 import { GamePlayer } from './GamePlayer';
 import { PuzzleErrorBoundary } from './PuzzleErrorBoundary';
@@ -70,16 +70,28 @@ export function EndlessMode({ seed: seedProp }: { seed?: number } = {}) {
   // Adaptive difficulty change is computed on solve but applied on advance, so it
   // never disrupts the just-solved puzzle.
   const pendingAdapt = useRef<{ gameId: string; difficulty: number } | null>(null);
+  // Whether the current puzzle was solved (vs. skipped). Reset per puzzle below.
+  const solvedRef = useRef(false);
+  useEffect(() => {
+    solvedRef.current = false;
+  }, [index]);
 
   const advance = useCallback(() => {
-    const p = pendingAdapt.current;
-    if (p) {
-      setDifficulty(p.gameId, p.difficulty);
-      pendingAdapt.current = null;
+    if (solvedRef.current) {
+      // Solved: apply the difficulty change the solve earned (if any).
+      const p = pendingAdapt.current;
+      if (p) {
+        setDifficulty(p.gameId, p.difficulty);
+        pendingAdapt.current = null;
+      }
+    } else {
+      // Skipped without solving: ease this game.
+      const eased = easeDifficulty(difficulty);
+      if (eased !== difficulty) setDifficulty(item.gameId, eased);
     }
     setIndex((i) => i + 1);
     if (!deterministic) setRand(randSeed());
-  }, [deterministic, setDifficulty]);
+  }, [deterministic, setDifficulty, item.gameId, difficulty]);
 
   // Auto-advance preference (off in deterministic/e2e mode so tests drive it).
   const [autoNext, setAutoNext] = useState(() => {
@@ -101,6 +113,7 @@ export function EndlessMode({ seed: seedProp }: { seed?: number } = {}) {
   const handleSolved = useCallback(
     (metrics: SolveMetrics) => {
       setSolvedCount((c) => c + 1);
+      solvedRef.current = true;
       // Adaptive challenge: tune THIS game's difficulty based on the solve.
       const next = adaptDifficulty(difficulty, metrics);
       if (next !== difficulty) pendingAdapt.current = { gameId: item.gameId, difficulty: next };
