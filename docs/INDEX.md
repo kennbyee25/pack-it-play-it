@@ -47,16 +47,30 @@ and how to fold its best ideas in here.
 
 ## What's shipped today
 
-4 games (graph-coloring, set-cover, hamiltonian, 3-SAT) in an interleaved endless box at
-`/box`, with per-game difficulty + game selection, spacebar/auto-advance, per-puzzle reset +
-timer + move counter, and optimal-challenge adaptive difficulty. CI (typecheck + unit + e2e)
-and GitHub Pages deploy run on every push to `main`. Live:
+**19 NP-complete games**, all on the shared `PuzzleGame` contract and auto-registered, in an
+interleaved endless box at `/box`: 3-SAT, clique, vertex-cover, independent-set, max-cut,
+graph-coloring, hamiltonian, directed-hamiltonian, steiner-tree, set-cover, set-packing,
+exact-cover, hitting-set, 3d-matching, knapsack, subset-sum, partition, integer-programming,
+nonogram. Each game gets per-game difficulty + selection, spacebar/auto-advance, per-puzzle
+reset + timer + move counter, and **heuristic** optimal-challenge difficulty (`adaptive.ts`).
+A shared **conformance suite** holds every game to the same contract; 200 unit/component tests
+green. The interleaved-vs-blocked **scheduler** (`scheduler.ts`) is in place. CI (typecheck +
+unit + e2e) and GitHub Pages deploy run on every push to `main`. Live:
 https://kennbyee25.github.io/pack-it-play-it/
 
-## Highest-leverage next steps (from the analysis)
+> **Substrate vs. science.** What's shipped is the *substrate* — roughly the engineering spine
+> of MVP 1 (flow-loop shell), MVP 2 (multi-game engine + registry), and MVP 4 (scheduler). The
+> *science instrumentation* (skill estimator, outcome scorer, calibration, solvers, telemetry,
+> experiment harness) is **not built yet** — see the roadmap.
+
+## Highest-leverage next steps
+
+The Karp-21 breadth-fill is essentially **done** (19 games). Current plan:
 
 1. **Solver layer** ([plans/solver-layer.md](./plans/solver-layer.md)) — unlocks the
-   algorithm-testing pillar *and* unique-solution generation in one stroke.
-2. **`category` + `reductionFrom` metadata** — cheap, and it's what the transfer experiment
+   algorithm-testing pillar, unique-solution generation, *and* MVP2 calibration (solver as a
+   reference player) in one stroke. **In progress.**
+2. **MVP 0 — measurable difficulty & skill** — Glicko/Elo-lite estimator + outcome scorer +
+   an offline simulation that validates monotonic difficulty (the A2 kill-criterion gate).
+3. **`category` + `reductionFrom` metadata** — cheap, and it's what the transfer experiment
    (MVP3) needs.
-3. **Karp-21 breadth-fill** — re-express v0's 18 generators against the `PuzzleGame` contract.

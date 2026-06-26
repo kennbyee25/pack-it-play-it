@@ -82,6 +82,33 @@ symmetry, so they're never unique up to permutation — uniqueness there needs a
 (Sudoku-style pre-filled "given" nodes or a fixed canonical color order). Out of scope for the
 first cut; handle per-game.
 
+## Implementation status (2026-06-26)
+
+**Shipped:** a functional solver core — `solvers/types.ts` (`Solver`, `SolverResult`,
+`SolverBudget`, `SolverSpec`), `solvers/base.ts` (`bruteForceSolver`, `randomSolver`,
+`countSolutions` — generic, budget/timing-owning, verifying via each game's own
+`isSolved`), a shared subset enumerator (`solvers/enumerate.ts`), `solvers/registry.ts`
+(`getSolvers`, `countSolutions`, `getGameSolvers`), and `solvers/uniquify.ts`. Per-game
+`SolverSpec`s for **three-sat, set-cover, subset-sum**. 23 tests green.
+
+**Empirical finding — uniqueness is a *generator* property, not a solver one.**
+Measuring `countSolutions` over 300 fresh instances per game/difficulty:
+
+| Game | Unique-instance rate | Verdict |
+|---|---|---|
+| set-cover | ~90% (d=100) → 26% (d=1500) | `uniquify` works out of the box |
+| subset-sum | ~1–4% | generator must reject decoys that form alternate sums |
+| three-sat | ~0% | small satisfiable SAT almost always has many models (Unique-SAT is rare) |
+
+So the solver layer is correct, but `uniquify` only reliably yields unique puzzles for
+set-cover today. Making subset-sum/3-SAT uniqueness-friendly is **generator work** (next
+step for [[project-pip-unique-solution]]): e.g. subset-sum — reject any decoy set whose
+subsets hit the target; 3-SAT — add clauses to pin down the assignment or accept that
+uniqueness isn't the right quality bar at these sizes.
+
+**Not yet done:** hamiltonian/graph-coloring + the rest of the 19-game roster (extend the
+`SPECS` map, one entry each), and the SolverPanel UI below.
+
 ## SolverPanel UI — `src/components/game/SolverPanel.tsx`
 
 A generic panel: **Run brute force** / **Run random** buttons, a readout of
