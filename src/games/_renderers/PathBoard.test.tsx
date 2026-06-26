@@ -31,6 +31,16 @@ describe('PathBoard node clicking', () => {
     expect(onMove).not.toHaveBeenCalled();
   });
 
+  it('keeps the last node selected so edges chain in one click each', () => {
+    const onMove = vi.fn();
+    render(<PathBoard state={state} onMove={onMove} />);
+    fireEvent.click(screen.getByLabelText('node-0'));
+    fireEvent.click(screen.getByLabelText('node-1')); // forms 0-1, leaves 1 selected
+    fireEvent.click(screen.getByLabelText('node-2')); // one more click -> forms 1-2
+    expect(onMove).toHaveBeenNthCalledWith(1, { edge: [0, 1] });
+    expect(onMove).toHaveBeenNthCalledWith(2, { edge: [1, 2] });
+  });
+
   it('clicking an edge directly toggles it', () => {
     const onMove = vi.fn();
     render(<PathBoard state={state} onMove={onMove} />);

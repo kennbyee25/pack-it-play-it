@@ -37,13 +37,15 @@ interface GamePlayerProps {
   game: PuzzleGame<any, any>;
   generated: Generated<any, any>;
   onSolved?: (metrics: SolveMetrics) => void;
+  // Called when the player resets the board — the box treats it as a fail.
+  onReset?: () => void;
   // Training affordance (also drives e2e): reveal/apply the known solution.
   canRevealSolution?: boolean;
 }
 
 // Generic shell: holds one game's state, applies moves, tracks moves + time, and
 // reports solve metrics when the verifier passes. Used standalone and in EndlessMode.
-export function GamePlayer({ game, generated, onSolved, canRevealSolution }: GamePlayerProps) {
+export function GamePlayer({ game, generated, onSolved, onReset, canRevealSolution }: GamePlayerProps) {
   const [state, setState] = useState<any>(generated.puzzle);
   const [moves, setMoves] = useState(0);
   const [seconds, setSeconds] = useState(0);
@@ -76,6 +78,7 @@ export function GamePlayer({ game, generated, onSolved, canRevealSolution }: Gam
   const resetPuzzle = () => {
     setState(generated.puzzle);
     setMoves(0);
+    onReset?.();
   };
 
   // Replays the known solution as real moves (so it counts as an optimal solve).
@@ -111,7 +114,7 @@ export function GamePlayer({ game, generated, onSolved, canRevealSolution }: Gam
       <Board game={game} state={state} onMove={applyMove} />
       <div className="flex items-center gap-2">
         {!solved && (
-          <Button variant="outline" size="sm" onClick={resetPuzzle}>
+          <Button variant="outline" size="sm" aria-label="reset puzzle" onClick={resetPuzzle}>
             <RotateCcw className="w-4 h-4 mr-1" />
             Reset
           </Button>

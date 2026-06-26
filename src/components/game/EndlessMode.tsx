@@ -70,22 +70,25 @@ export function EndlessMode({ seed: seedProp }: { seed?: number } = {}) {
   // Adaptive difficulty change is computed on solve but applied on advance, so it
   // never disrupts the just-solved puzzle.
   const pendingAdapt = useRef<{ gameId: string; difficulty: number } | null>(null);
-  // Whether the current puzzle was solved (vs. skipped). Reset per puzzle below.
+  // Per-puzzle outcome flags (reset below). `failed` = the player hit Reset,
+  // which counts as a fail even if they later solve it.
   const solvedRef = useRef(false);
+  const failedRef = useRef(false);
   useEffect(() => {
     solvedRef.current = false;
+    failedRef.current = false;
   }, [index]);
 
   const advance = useCallback(() => {
-    if (solvedRef.current) {
-      // Solved: apply the difficulty change the solve earned (if any).
+    if (solvedRef.current && !failedRef.current) {
+      // Clean solve: apply the difficulty change the solve earned (if any).
       const p = pendingAdapt.current;
       if (p) {
         setDifficulty(p.gameId, p.difficulty);
         pendingAdapt.current = null;
       }
     } else {
-      // Skipped without solving: ease this game.
+      // Skipped or reset (failed): ease this game.
       const eased = easeDifficulty(difficulty);
       if (eased !== difficulty) setDifficulty(item.gameId, eased);
     }
@@ -170,6 +173,9 @@ export function EndlessMode({ seed: seedProp }: { seed?: number } = {}) {
           generated={generated}
           canRevealSolution={canRevealSolution}
           onSolved={handleSolved}
+          onReset={() => {
+            failedRef.current = true;
+          }}
         />
       </PuzzleErrorBoundary>
       <div className="flex items-center gap-4">
