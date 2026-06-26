@@ -1,6 +1,6 @@
 import type { PuzzleGame, Generated, Difficulty } from '../types';
 import type { Rng } from '../rng';
-import { toggleSelected } from '../_shared/selection';
+import { toggleSelected, pickedIndices } from '../_shared/selection';
 
 export interface SetPackingState {
   universe: number[];
@@ -72,7 +72,7 @@ export const setPacking: PuzzleGame<SetPackingState, SetPackingMove> = {
   applyMove: (state, move) => toggleSelected(state, move.subsetIndex),
 
   isSolved(state) {
-    const selectedIndices = state.selected.map((v: boolean, i: number) => [v, i] as [boolean, number]).filter(([v]) => v).map(([, i]) => i);
+    const selectedIndices = pickedIndices(state.selected);
     if (selectedIndices.length !== state.k) return false;
     // Check pairwise disjoint.
     const elementCount = new Map<number, number>();
@@ -86,7 +86,7 @@ export const setPacking: PuzzleGame<SetPackingState, SetPackingMove> = {
   },
 
   progress(state) {
-    const selectedIndices = state.selected.map((v: boolean, i: number) => [v, i] as [boolean, number]).filter(([v]) => v).map(([, i]) => i);
+    const selectedIndices = pickedIndices(state.selected);
     if (selectedIndices.length === 0) return 0;
     // Check for conflicts.
     const elementCount = new Map<number, number>();

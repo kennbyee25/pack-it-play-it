@@ -1,6 +1,6 @@
 import type { PuzzleGame, Generated, Difficulty } from '../types';
 import type { Rng } from '../rng';
-import { toggleSelected } from '../_shared/selection';
+import { toggleSelected, pickedIndices, selectionCount } from '../_shared/selection';
 import { edgeKey, edgeAccumulator } from '../_shared/graph';
 
 export interface CliqueState {
@@ -76,7 +76,7 @@ export const clique: PuzzleGame<CliqueState, CliqueMove> = {
   applyMove: (state, move) => toggleSelected(state, move.node),
 
   isSolved(state) {
-    const sel = state.selected.map((s, i) => (s ? i : -1)).filter((i) => i >= 0);
+    const sel = pickedIndices(state.selected);
     if (sel.length !== state.k) return false;
     const edgeSet = new Set(state.edges.map(([a, b]) => edgeKey(a, b)));
     for (let i = 0; i < sel.length; i++) {
@@ -89,7 +89,7 @@ export const clique: PuzzleGame<CliqueState, CliqueMove> = {
 
   progress(state) {
     if (this.isSolved(state)) return 100;
-    const count = state.selected.filter(Boolean).length;
+    const count = selectionCount(state.selected);
     return Math.min(99, Math.round((count / state.k) * 100));
   },
 };

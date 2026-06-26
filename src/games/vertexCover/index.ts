@@ -1,6 +1,6 @@
 import type { PuzzleGame, Generated, Difficulty } from '../types';
 import type { Rng } from '../rng';
-import { toggleSelected } from '../_shared/selection';
+import { toggleSelected, selectionCount } from '../_shared/selection';
 import { normEdge as norm } from '../_shared/graph';
 
 export interface VertexCoverState {
@@ -87,7 +87,7 @@ export const vertexCover: PuzzleGame<VertexCoverState, VertexCoverMove> = {
   applyMove: (state, move) => toggleSelected(state, move.node),
 
   isSolved(state) {
-    if (state.selected.filter(Boolean).length > state.k) return false;
+    if (selectionCount(state.selected) > state.k) return false;
     return state.edges.every(([a, b]) => state.selected[a] || state.selected[b]);
   },
 

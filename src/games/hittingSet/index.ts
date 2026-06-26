@@ -1,6 +1,6 @@
 import type { PuzzleGame, Generated, Difficulty } from '../types';
 import type { Rng } from '../rng';
-import { toggleSelected } from '../_shared/selection';
+import { toggleSelected, selectionCount } from '../_shared/selection';
 
 // Hitting Set (set-cover archetype, transposed): select ≤k elements from the
 // universe so every given subset contains at least one selected element.
@@ -76,7 +76,7 @@ export const hittingSet: PuzzleGame<HittingSetState, HittingSetMove> = {
   applyMove: (state, move) => toggleSelected(state, move.subsetIndex),
 
   isSolved(state) {
-    const count = state.selected.filter(Boolean).length;
+    const count = selectionCount(state.selected);
     if (count > state.k) return false;
     const covered = new Set<number>();
     state.subsets.forEach((hits, e) => {
