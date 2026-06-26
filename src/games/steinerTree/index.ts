@@ -1,5 +1,6 @@
 import type { PuzzleGame, Generated, Difficulty } from '../types';
 import type { Rng } from '../rng';
+import { normEdge as norm } from '../_shared/graph';
 
 // Steiner Tree (graph-path archetype): connect all terminal nodes using a subset
 // of available edges. Non-terminal (Steiner) nodes may be used as intermediate.
@@ -14,7 +15,6 @@ export interface SteinerTreeMove {
   edge: [number, number];
 }
 
-const norm = (a: number, b: number): [number, number] => (a < b ? [a, b] : [b, a]);
 const ekey = (e: [number, number]) => `${e[0]}-${e[1]}`;
 
 function configFor(d: Difficulty) {

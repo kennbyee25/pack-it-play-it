@@ -1,5 +1,7 @@
 import type { PuzzleGame, Generated, Difficulty } from '../types';
 import type { Rng } from '../rng';
+import { toggleSelected } from '../_shared/selection';
+import { edgeAccumulator } from '../_shared/graph';
 
 export interface IndependentSetState {
   n: number;
@@ -19,8 +21,6 @@ function configFor(d: Difficulty) {
   return { k, n, nonIsDensity };
 }
 
-const norm = (a: number, b: number): [number, number] => (a < b ? [a, b] : [b, a]);
-const edgeKey = (a: number, b: number) => { const [x, y] = norm(a, b); return `${x}-${y}`; };
 
 export const independentSet: PuzzleGame<IndependentSetState, IndependentSetMove> = {
   id: 'independent-set',
@@ -33,35 +33,30 @@ export const independentSet: PuzzleGame<IndependentSetState, IndependentSetMove>
     const isNodes = new Set(allNodes.slice(0, k));
     const nonIsNodes = allNodes.slice(k);
 
-    const seen = new Set<string>();
-    const edges: [number, number][] = [];
-    const addEdge = (a: number, b: number) => {
-      const key = edgeKey(a, b);
-      if (!seen.has(key)) { seen.add(key); edges.push(norm(a, b)); }
-    };
+    const acc = edgeAccumulator();
 
     // Add edges among non-IS nodes (dense)
     for (let i = 0; i < nonIsNodes.length; i++) {
       for (let j = i + 1; j < nonIsNodes.length; j++) {
-        if (rng.next() < nonIsDensity) addEdge(nonIsNodes[i], nonIsNodes[j]);
+        if (rng.next() < nonIsDensity) acc.add(nonIsNodes[i], nonIsNodes[j]);
       }
     }
 
     // Add edges from IS nodes to non-IS nodes (no edges between IS nodes)
     for (const isNode of isNodes) {
       for (const nonNode of nonIsNodes) {
-        if (rng.next() < 0.4) addEdge(isNode, nonNode);
+        if (rng.next() < 0.4) acc.add(isNode, nonNode);
       }
     }
 
     // Ensure at least some edges exist
-    if (edges.length === 0 && nonIsNodes.length > 0) {
-      addEdge(nonIsNodes[0], allNodes[k > 0 ? k : 0]);
+    if (acc.edges.length === 0 && nonIsNodes.length > 0) {
+      acc.add(nonIsNodes[0], allNodes[k > 0 ? k : 0]);
     }
 
     const puzzle: IndependentSetState = {
       n,
-      edges: rng.shuffle(edges),
+      edges: rng.shuffle(acc.edges),
       selected: Array(n).fill(false),
       k,
       instruction: `Select ${k} nodes with no two connected by an edge`,
@@ -70,11 +65,7 @@ export const independentSet: PuzzleGame<IndependentSetState, IndependentSetMove>
     return { puzzle, solution };
   },
 
-  applyMove(state, move) {
-    const selected = [...state.selected];
-    selected[move.node] = !selected[move.node];
-    return { ...state, selected };
-  },
+  applyMove: (state, move) => toggleSelected(state, move.node),
 
   isSolved(state) {
     const sel = state.selected;

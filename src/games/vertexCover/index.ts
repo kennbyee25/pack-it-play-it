@@ -1,5 +1,7 @@
 import type { PuzzleGame, Generated, Difficulty } from '../types';
 import type { Rng } from '../rng';
+import { toggleSelected } from '../_shared/selection';
+import { normEdge as norm } from '../_shared/graph';
 
 export interface VertexCoverState {
   n: number;
@@ -18,7 +20,6 @@ function configFor(d: Difficulty) {
   return { n, density };
 }
 
-const norm = (a: number, b: number): [number, number] => (a < b ? [a, b] : [b, a]);
 
 export const vertexCover: PuzzleGame<VertexCoverState, VertexCoverMove> = {
   id: 'vertex-cover',
@@ -83,11 +84,7 @@ export const vertexCover: PuzzleGame<VertexCoverState, VertexCoverMove> = {
     return { puzzle, solution };
   },
 
-  applyMove(state, move) {
-    const selected = [...state.selected];
-    selected[move.node] = !selected[move.node];
-    return { ...state, selected };
-  },
+  applyMove: (state, move) => toggleSelected(state, move.node),
 
   isSolved(state) {
     if (state.selected.filter(Boolean).length > state.k) return false;

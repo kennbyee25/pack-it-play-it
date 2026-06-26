@@ -1,5 +1,6 @@
 import type { PuzzleGame, Generated, Difficulty } from '../types';
 import type { Rng } from '../rng';
+import { normEdge as norm } from '../_shared/graph';
 
 export interface MaxCutState {
   n: number;
@@ -20,7 +21,6 @@ function configFor(d: Difficulty) {
   return { n, density };
 }
 
-const norm = (a: number, b: number): [number, number] => (a < b ? [a, b] : [b, a]);
 
 export const maxCut: PuzzleGame<MaxCutState, MaxCutMove> = {
   id: 'max-cut',
