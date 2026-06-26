@@ -225,6 +225,22 @@ sequenceDiagram
 
 ## MVP 2 — Multi-Game Common Scale
 
+> **Status (2026-06-26): ✅ calibration shipped for the monotonic roster.**
+> `src/games/skill/calibration.ts`: `measureCurve` (reference random-solver success vs
+> native difficulty), `nativeForRate` (invert the curve), `buildCalibration`, and
+> `calibratedNativeDifficulty` — which maps a **normalized** difficulty D to each game's
+> native knob so the reference player's expected success equals `expectedScore(REF_SKILL, D)`
+> in every game. 10 tests.
+>
+> **Result — same normalized D ⇒ same success across games (within ±0.15 per game; cross-game
+> spread < 0.22).** Calibrated set: set-cover, subset-sum, vertex-cover, independent-set,
+> exact-cover, 3d-matching (all ρ ≤ −0.95, spanning the target band). Per-game skill
+> independence confirmed (estimator separates a player strong at A / weak at B by >400). Games
+> excluded from calibration because their knob is too flat/narrow: knapsack (ρ −0.46), max-cut
+> (−0.29), steiner-tree (−0.61), hitting-set, plus the too-hard-at-D0 set (clique, hamiltonian,
+> directed-hamiltonian) — these need generator tuning before they join the common scale.
+> **Next:** widen the calibrated set (tune those generators), then MVP 3 (transfer).
+
 **Bet (enabler):** Multiple NP-complete games can share one **normalized** difficulty/skill
 scale, so a player's skills across games are co-estimable and comparable — the
 precondition for measuring transfer.

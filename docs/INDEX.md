@@ -65,12 +65,13 @@ https://kennbyee25.github.io/pack-it-play-it/
 
 ## Highest-leverage next steps
 
-The Karp-21 breadth-fill is essentially **done** (19 games). Current plan:
+The Karp-21 breadth-fill is **done** (19 games); the solver layer (17/19), MVP 0, and MVP 2
+calibration are **shipped** (`src/games/solvers/`, `src/games/skill/`). Current plan:
 
-1. **Solver layer** ([plans/solver-layer.md](./plans/solver-layer.md)) — unlocks the
-   algorithm-testing pillar, unique-solution generation, *and* MVP2 calibration (solver as a
-   reference player) in one stroke. **In progress.**
-2. **MVP 0 — measurable difficulty & skill** — Glicko/Elo-lite estimator + outcome scorer +
-   an offline simulation that validates monotonic difficulty (the A2 kill-criterion gate).
-3. **`category` + `reductionFrom` metadata** — cheap, and it's what the transfer experiment
+1. **Tune the weak-knob generators** so more games join the common scale: 3-SAT (re-enable once
+   monotonic), knapsack, max-cut, steiner-tree, hitting-set, and the too-hard-at-D0 set
+   (clique, hamiltonian, directed-hamiltonian).
+2. **`category` + `reductionFrom` metadata** — cheap, and it's what the transfer experiment
    (MVP3) needs.
+3. **MVP 3 — transfer experiment** ★ the crown-jewel A3 bet (experiment harness + cohorts +
+   pre-registered stats; runs first as an offline simulation).
