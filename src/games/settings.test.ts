@@ -22,6 +22,22 @@ describe('defaultSettings', () => {
   });
 });
 
+describe('DEFAULT_DISABLED', () => {
+  it('disables three-sat by default but still includes it', () => {
+    const s = defaultSettings([{ id: 'three-sat' }, { id: 'set-cover' }]);
+    expect(s['three-sat'].enabled).toBe(false);
+    expect(s['set-cover'].enabled).toBe(true);
+  });
+
+  it('mergeSettings keeps a stored three-sat preference (opt-in respected)', () => {
+    const merged = mergeSettings(
+      { 'three-sat': { enabled: true, difficulty: 800 } },
+      [{ id: 'three-sat' }, { id: 'set-cover' }],
+    );
+    expect(merged['three-sat'].enabled).toBe(true); // user re-enabled it; honored
+  });
+});
+
 describe('mergeSettings', () => {
   it('adds newly-registered games (enabled) and drops unknown ids', () => {
     const stored = { a: { enabled: false, difficulty: 700 }, gone: { enabled: false, difficulty: 100 } };
