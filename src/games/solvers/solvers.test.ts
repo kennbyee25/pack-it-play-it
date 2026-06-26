@@ -1,6 +1,6 @@
 import { describe, it, expect } from 'vitest';
 import { makeRng } from '../rng';
-import { getGame } from '../registry';
+import { getGame, GAMES } from '../registry';
 import { getSolvers, countSolutions, getGameSolvers, SOLVER_GAME_IDS } from './registry';
 import { bruteForceSolver, countSolutions as countFor } from './base';
 import { uniquify } from './uniquify';
@@ -15,6 +15,13 @@ describe('solver registry', () => {
   it('returns undefined for a game with no solver', () => {
     expect(getSolvers('graph-coloring')).toBeUndefined();
     expect(countSolutions('graph-coloring', {})).toBeUndefined();
+  });
+
+  it('covers every game except the two documented exclusions', () => {
+    const allIds = GAMES.map((g) => g.id);
+    const excluded = ['graph-coloring', 'nonogram']; // symmetry / infeasible enumeration
+    const expected = allIds.filter((id) => !excluded.includes(id)).sort();
+    expect([...SOLVER_GAME_IDS].sort()).toEqual(expected);
   });
 });
 

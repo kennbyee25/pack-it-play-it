@@ -106,8 +106,16 @@ step for [[project-pip-unique-solution]]): e.g. subset-sum — reject any decoy 
 subsets hit the target; 3-SAT — add clauses to pin down the assignment or accept that
 uniqueness isn't the right quality bar at these sizes.
 
-**Not yet done:** hamiltonian/graph-coloring + the rest of the 19-game roster (extend the
-`SPECS` map, one entry each), and the SolverPanel UI below.
+**Roster coverage (2026-06-26): 17/19 games.** The per-game files were consolidated into
+generic factories (`solvers/specs.ts`): `subsetSpec` (graph-select, set-cover family,
+number-packing), `assignmentSpec` (3-SAT, integer-programming), `edgeSubsetSpec` (hamiltonian,
+directed-hamiltonian, steiner-tree), `binaryColorSpec` (max-cut). Brute-force/random verified
+for all 17 (93 tests). **Excluded by design:** graph-coloring (color-swap symmetry + k^n
+enumeration) and nonogram (2^(rows·cols) infeasible to brute-force). A coverage test guards
+that the `SPECS` map equals the roster minus those two.
+
+**Not yet done:** the SolverPanel UI below; smarter (non-enumerative) solvers for the largest
+instances; making subset-sum/3-SAT generators uniqueness-friendly.
 
 ## SolverPanel UI — `src/components/game/SolverPanel.tsx`
 

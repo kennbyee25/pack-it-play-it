@@ -1,21 +1,10 @@
 import type { PuzzleGame } from '../types';
 import type { Rng } from '../rng';
 import { makeRng } from '../rng';
-import type { GameSolvers, Solver, SolverSpec } from './types';
+import type { GameSolvers, Solver } from './types';
 import { bruteForceSolver, randomSolver, countSolutions as countFor } from './base';
 import { getGame } from '../registry';
-
-import { threeSatSpec } from '../threeSat/solver';
-import { setCoverSpec } from '../setCover/solver';
-import { subsetSumSpec } from '../subsetSum/solver';
-
-// Games with a registered search space. Extend this map as breadth-fill adds
-// solvers (Open-Closed: one entry per game, no edits elsewhere).
-const SPECS: Record<string, SolverSpec<any>> = {
-  'three-sat': threeSatSpec,
-  'set-cover': setCoverSpec,
-  'subset-sum': subsetSumSpec,
-};
+import { SPECS } from './specs';
 
 export const SOLVER_GAME_IDS = Object.keys(SPECS);
 export const hasSolver = (gameId: string): boolean => gameId in SPECS;
