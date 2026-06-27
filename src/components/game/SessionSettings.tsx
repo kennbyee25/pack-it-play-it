@@ -5,7 +5,9 @@ import { Checkbox } from '@/components/ui/checkbox';
 import { Slider } from '@/components/ui/slider';
 import { Button } from '@/components/ui/button';
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible';
+import { Switch } from '@/components/ui/switch';
 import { ChevronDown, Settings2 } from 'lucide-react';
+import { isOptedOut, setOptOut } from '@/telemetry/sink';
 
 interface SessionSettingsProps {
   settings: GameSettings;
@@ -18,6 +20,7 @@ interface SessionSettingsProps {
 // state lives in EndlessMode via useGameSettings.
 export function SessionSettings({ settings, onToggle, onDifficulty, onReset }: SessionSettingsProps) {
   const [open, setOpen] = useState(false);
+  const [contribute, setContribute] = useState(() => !isOptedOut());
   const enabledCount = enabledGameIds(settings).length;
 
   return (
@@ -69,6 +72,22 @@ export function SessionSettings({ settings, onToggle, onDifficulty, onReset }: S
               </div>
             );
           })}
+          <div className="flex items-center justify-between border-t border-border pt-3">
+            <label className="flex flex-col text-sm">
+              <span className="font-medium">Contribute anonymized data</span>
+              <span className="text-xs text-muted-foreground">
+                Anonymous puzzle traces (no personal info) help train solvers.
+              </span>
+            </label>
+            <Switch
+              checked={contribute}
+              aria-label="contribute anonymized data"
+              onCheckedChange={(on) => {
+                setContribute(on);
+                setOptOut(!on);
+              }}
+            />
+          </div>
           <Button variant="ghost" size="sm" className="self-end" onClick={onReset}>
             Reset
           </Button>

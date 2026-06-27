@@ -101,6 +101,23 @@ export function getAnonId(storage: Storage | undefined = safeStorage()): string 
 export const isOptedOut = (storage: Storage | undefined = safeStorage()): boolean =>
   storage?.getItem(OPTOUT_KEY) === 'off';
 
+export function setOptOut(off: boolean, storage: Storage | undefined = safeStorage()): void {
+  if (!storage) return;
+  if (off) storage.setItem(OPTOUT_KEY, 'off');
+  else storage.removeItem(OPTOUT_KEY);
+}
+
+// Wrap a sink so emit() is suppressed live whenever the user is opted out — lets a
+// runtime toggle take effect without a reload.
+export function guardedSink(inner: TraceSink): TraceSink {
+  return {
+    emit: (e) => {
+      if (!isOptedOut()) inner.emit(e);
+    },
+    flush: () => inner.flush(),
+  };
+}
+
 function safeStorage(): Storage | undefined {
   try {
     return typeof localStorage !== 'undefined' ? localStorage : undefined;
@@ -109,9 +126,9 @@ function safeStorage(): Storage | undefined {
   }
 }
 
-// Pick the sink from Vite env + opt-out. On by default; NoopSink when unconfigured.
+// Pick the sink from Vite env. On by default; NoopSink when unconfigured. The
+// opt-out is applied live via guardedSink (see tracer), so toggling needs no reload.
 export function makeSink(env: Record<string, string | undefined> = importMetaEnv()): TraceSink {
-  if (isOptedOut()) return NoopSink;
   const url = env.VITE_SUPABASE_URL;
   const anonKey = env.VITE_SUPABASE_ANON_KEY;
   if (!url || !anonKey) return NoopSink;

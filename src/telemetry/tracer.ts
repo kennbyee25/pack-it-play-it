@@ -5,7 +5,7 @@
 import { getMetadata } from '../games/metadata';
 import type { TraceEvent } from './types';
 import { makePuzzleId } from './types';
-import { type TraceSink, makeSink, getAnonId } from './sink';
+import { type TraceSink, makeSink, getAnonId, guardedSink } from './sink';
 
 export interface StartInfo {
   index: number;
@@ -66,5 +66,5 @@ export function createTracer(sink: TraceSink, sessionId: string, now: () => numb
   };
 }
 
-// App-wide singleton (Noop unless Supabase env is configured + not opted out).
-export const tracer: Tracer = createTracer(makeSink(), getAnonId());
+// App-wide singleton (Noop unless Supabase env is configured; opt-out applied live).
+export const tracer: Tracer = createTracer(guardedSink(makeSink()), getAnonId());
