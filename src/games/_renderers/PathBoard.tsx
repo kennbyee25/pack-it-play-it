@@ -40,7 +40,9 @@ export function PathBoard({ state, onMove }: { state: any; onMove: (m: any) => v
     }
     const e: [number, number] = isDirected ? [selected, i] : edgeOf(selected, i);
     if (available.has(keyFn(e))) onMove({ edge: e });
-    setSelected(null);
+    // Keep the just-clicked node selected so edges can be chained in one click
+    // each (A->B, then B->C…). Clicking the same node again (above) deselects.
+    setSelected(i);
   };
 
   let instruction: string;

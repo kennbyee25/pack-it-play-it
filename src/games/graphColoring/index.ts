@@ -45,7 +45,17 @@ export const graphColoring: PuzzleGame<ColoringState, ColorMove> = {
         }
       }
     }
-    const puzzle: ColoringState = { n, edges, k, colors: Array(n).fill(null) };
+    // Guarantee at least one edge so a fully-colored board is never vacuously
+    // "solved" (edges.every(...) is true on an empty edge set). The edge must
+    // join two differently-colored nodes so the planted solution still holds;
+    // if every node ended up the same color, recolor one (it has no edges yet).
+    if (edges.length === 0 && n >= 2) {
+      if (planted.every((c) => c === planted[0])) planted[1] = (planted[0] + 1) % k;
+      const b = planted.findIndex((c) => c !== planted[0]);
+      edges.push([0, b]);
+    }
+    // Pre-color every node with the first color as a starting scaffold.
+    const puzzle: ColoringState = { n, edges, k, colors: Array(n).fill(0) };
     const solution: ColorMove[] = planted.map((color, node) => ({ node, color }));
     return { puzzle, solution };
   },
@@ -62,15 +72,11 @@ export const graphColoring: PuzzleGame<ColoringState, ColorMove> = {
   },
 
   progress(state) {
-    // Nodes that are colored and not part of any monochromatic edge.
-    const bad = new Set<number>();
-    for (const [a, b] of state.edges) {
-      if (state.colors[a] !== null && state.colors[a] === state.colors[b]) {
-        bad.add(a);
-        bad.add(b);
-      }
-    }
-    const good = state.colors.filter((c, i) => c !== null && !bad.has(i)).length;
-    return Math.round((good / state.n) * 100);
+    // Fraction of edges whose endpoints differ. This stays 0 on a fresh board
+    // (every node pre-colored the same => no satisfied edges) and reaches 100
+    // exactly when solved — independent of isolated nodes.
+    if (state.edges.length === 0) return 100;
+    const satisfied = state.edges.filter(([a, b]) => state.colors[a] !== state.colors[b]).length;
+    return Math.round((satisfied / state.edges.length) * 100);
   },
 };

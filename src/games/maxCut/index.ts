@@ -60,7 +60,7 @@ export const maxCut: PuzzleGame<MaxCutState, MaxCutMove> = {
     const puzzle: MaxCutState = {
       n,
       edges,
-      colors: Array(n).fill(null),
+      colors: Array(n).fill(0),
       k: 2,
       cutTarget,
       instruction: `Assign nodes to two groups (red/teal) to cut at least ${cutTarget} edges between them`,

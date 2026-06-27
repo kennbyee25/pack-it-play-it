@@ -32,4 +32,17 @@ test.describe('adaptive difficulty', () => {
 
     await expect(sizeValue(page)).toHaveText('950');
   });
+
+  test('resetting a puzzle counts as a fail and lowers the difficulty', async ({ page }) => {
+    await seedOnlySetCover(page, 1000);
+    await page.goto('/box?seed=2');
+    await page.getByRole('button', { name: /advanced options/i }).click();
+    await expect(sizeValue(page)).toHaveText('1000');
+
+    // Reset (fail) keeps the same board; the ease lands on the next advance.
+    await page.getByRole('button', { name: 'reset puzzle' }).click();
+    await page.getByRole('button', { name: /next puzzle/i }).click();
+
+    await expect(sizeValue(page)).toHaveText('950');
+  });
 });

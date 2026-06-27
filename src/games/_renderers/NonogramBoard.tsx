@@ -166,6 +166,10 @@ export function NonogramBoard({ state, onMove }: BoardProps<NonogramState, Nonog
                   v === 1 ? 'bg-piece-teal' : v === 2 ? 'bg-piece-coral/20' : 'bg-input'
                 }`}
                 style={{
+                  // border-box so the every-5 major (2px) borders sit INSIDE the
+                  // fixed cell size — otherwise those rows/cols render wider than
+                  // the rest and the whole grid looks uneven.
+                  boxSizing: 'border-box',
                   borderTop: `${topMajor ? 2 : 1}px solid ${topMajor ? MAJOR : MINOR}`,
                   borderLeft: `${leftMajor ? 2 : 1}px solid ${leftMajor ? MAJOR : MINOR}`,
                   ...(c === cols - 1 ? { borderRight: `2px solid ${MAJOR}` } : null),
