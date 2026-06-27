@@ -68,7 +68,7 @@ describe('SupabaseSink', () => {
   });
 
   it('batches at batchSize and POSTs rows', async () => {
-    const fetchImpl = vi.fn(async () => new Response(null, { status: 201 }));
+    const fetchImpl = vi.fn(async (_url: string, _init?: RequestInit) => new Response(null, { status: 201 }));
     const sink = new SupabaseSink(cfg(fetchImpl as unknown as typeof fetch));
     sink.emit(ev(0));
     expect(fetchImpl).not.toHaveBeenCalled();
@@ -97,7 +97,7 @@ describe('HttpSink (self-hosted ingest)', () => {
   });
 
   it('POSTs rows to ${url}/traces with no auth headers', async () => {
-    const fetchImpl = vi.fn(async () => new Response(null, { status: 200 }));
+    const fetchImpl = vi.fn(async (_url: string, _init?: RequestInit) => new Response(null, { status: 200 }));
     const sink = new HttpSink({ url: 'https://pip-ingest.example.ts.net/', batchSize: 5, fetchImpl: fetchImpl as unknown as typeof fetch });
     sink.emit(ev(0));
     await sink.flush();
