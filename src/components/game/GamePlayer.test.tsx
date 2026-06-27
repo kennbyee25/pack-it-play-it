@@ -20,6 +20,17 @@ describe('GamePlayer', () => {
     expect(screen.getByLabelText('progress')).toHaveTextContent(/^0%$/);
   });
 
+  it('fires onMove at the choke point with index and timing', () => {
+    const onMove = vi.fn();
+    render(<GamePlayer game={setCover} generated={gen()} onMove={onMove} />);
+    fireEvent.click(screen.getByRole('button', { name: 'subset-0' }));
+    expect(onMove).toHaveBeenCalledTimes(1);
+    const [move, moveIndex, ms] = onMove.mock.calls[0];
+    expect(move).toBeDefined();
+    expect(moveIndex).toBe(0);
+    expect(typeof ms).toBe('number');
+  });
+
   it('reports optimal-move metrics when solved via the solution', () => {
     const g = gen();
     const onSolved = vi.fn();

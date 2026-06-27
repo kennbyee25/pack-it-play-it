@@ -4,6 +4,8 @@ import { buildSchedule } from '@/games/scheduler';
 import { makeRng } from '@/games/rng';
 import { DIFFICULTY, enabledGameIds } from '@/games/settings';
 import { adaptDifficulty, easeDifficulty, type SolveMetrics } from '@/games/adaptive';
+import { scoreOutcome } from '@/games/skill/scorer';
+import { tracer } from '@/telemetry/tracer';
 import { useGameSettings } from '@/hooks/useGameSettings';
 import { GamePlayer } from './GamePlayer';
 import { PuzzleErrorBoundary } from './PuzzleErrorBoundary';
@@ -74,12 +76,46 @@ export function EndlessMode({ seed: seedProp }: { seed?: number } = {}) {
   // which counts as a fail even if they later solve it.
   const solvedRef = useRef(false);
   const failedRef = useRef(false);
+  // Telemetry per-puzzle refs (the move count/time live in GamePlayer).
+  const lastMoveRef = useRef({ count: 0, ms: 0 });
+  const solveMetricsRef = useRef<SolveMetrics | null>(null);
+  const optimalMovesRef = useRef(0);
   useEffect(() => {
     solvedRef.current = false;
     failedRef.current = false;
+    lastMoveRef.current = { count: 0, ms: 0 };
+    solveMetricsRef.current = null;
   }, [index]);
 
+  // Emit a puzzle_started event whenever a new puzzle is shown.
+  useEffect(() => {
+    optimalMovesRef.current = generated.solution.length;
+    tracer.puzzleStarted({
+      index,
+      gameId: item.gameId,
+      difficulty,
+      genSeed,
+      optimalMoves: generated.solution.length,
+    });
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [generated]);
+
   const advance = useCallback(() => {
+    // Close out the current puzzle's trace exactly once (tracer dedups).
+    const cleanSolve = solvedRef.current && !failedRef.current;
+    const outcome = cleanSolve ? 'solved' : failedRef.current ? 'failed' : 'abandoned';
+    const m = solveMetricsRef.current;
+    const moves = m?.moves ?? lastMoveRef.current.count;
+    const seconds = m?.seconds ?? Math.floor(lastMoveRef.current.ms / 1000);
+    const optimalMoves = optimalMovesRef.current;
+    tracer.puzzleEnded({
+      outcome,
+      moves,
+      optimalMoves,
+      seconds,
+      score: scoreOutcome({ solved: cleanSolve, moves, optimalMoves, seconds }),
+    });
+
     if (solvedRef.current && !failedRef.current) {
       // Clean solve: apply the difficulty change the solve earned (if any).
       const p = pendingAdapt.current;
@@ -117,6 +153,7 @@ export function EndlessMode({ seed: seedProp }: { seed?: number } = {}) {
     (metrics: SolveMetrics) => {
       setSolvedCount((c) => c + 1);
       solvedRef.current = true;
+      solveMetricsRef.current = metrics;
       // Adaptive challenge: tune THIS game's difficulty based on the solve.
       const next = adaptDifficulty(difficulty, metrics);
       if (next !== difficulty) pendingAdapt.current = { gameId: item.gameId, difficulty: next };
@@ -173,6 +210,10 @@ export function EndlessMode({ seed: seedProp }: { seed?: number } = {}) {
           generated={generated}
           canRevealSolution={canRevealSolution}
           onSolved={handleSolved}
+          onMove={(move, moveIndex, msSinceStart) => {
+            lastMoveRef.current = { count: moveIndex + 1, ms: msSinceStart };
+            tracer.move(move);
+          }}
           onReset={() => {
             failedRef.current = true;
           }}

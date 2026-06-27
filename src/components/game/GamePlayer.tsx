@@ -37,6 +37,8 @@ interface GamePlayerProps {
   game: PuzzleGame<any, any>;
   generated: Generated<any, any>;
   onSolved?: (metrics: SolveMetrics) => void;
+  // Called for every move at the single choke point — used for telemetry.
+  onMove?: (move: any, moveIndex: number, msSinceStart: number) => void;
   // Called when the player resets the board — the box treats it as a fail.
   onReset?: () => void;
   // Training affordance (also drives e2e): reveal/apply the known solution.
@@ -45,7 +47,7 @@ interface GamePlayerProps {
 
 // Generic shell: holds one game's state, applies moves, tracks moves + time, and
 // reports solve metrics when the verifier passes. Used standalone and in EndlessMode.
-export function GamePlayer({ game, generated, onSolved, onReset, canRevealSolution }: GamePlayerProps) {
+export function GamePlayer({ game, generated, onSolved, onMove, onReset, canRevealSolution }: GamePlayerProps) {
   const [state, setState] = useState<any>(generated.puzzle);
   const [moves, setMoves] = useState(0);
   const [seconds, setSeconds] = useState(0);
@@ -70,6 +72,7 @@ export function GamePlayer({ game, generated, onSolved, onReset, canRevealSoluti
   }, [solved, generated]);
 
   const applyMove = (m: any) => {
+    onMove?.(m, moves, Date.now() - startRef.current);
     setState((s: any) => game.applyMove(s, m));
     setMoves((n) => n + 1);
   };

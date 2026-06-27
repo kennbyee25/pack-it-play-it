@@ -94,7 +94,11 @@ feature; catalog is a new route alongside `/box`.
 
 ---
 
-## P4 — Problem metadata: `category` + `reductionFrom`
+## P4 — Problem metadata: `category` + `reductionFrom`  ✅ done (2026-06-27)
+
+Shipped as `src/games/metadata.ts` (central map + `getMetadata`): `category`
+(satisfiability|graph|set|number|sequencing) + `reductionFrom` (Karp lineage) per game, tested
+for completeness + acyclicity. Stamped onto every telemetry trace. `yearIntroduced` deferred.
 
 **What.** Add a problem registry carrying `category` (satisfiability|graph|set|number|sequencing),
 `yearIntroduced`, and **`reductionFrom`** per game.

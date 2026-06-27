@@ -2,6 +2,13 @@ import type { PuzzleGame } from './types';
 
 export const DIFFICULTY = { min: 100, max: 2500, step: 50, default: 100 } as const;
 
+// Games disabled by default because their difficulty knob fails the A2 monotonicity
+// gate (success rate not monotone with D) — see docs/plans/vision-and-mvp-roadmap.md
+// (MVP 0). They remain selectable; remove from this set once calibrated.
+export const DEFAULT_DISABLED: ReadonlySet<string> = new Set(['three-sat']);
+
+const enabledByDefault = (id: string): boolean => !DEFAULT_DISABLED.has(id);
+
 export interface GameSetting {
   enabled: boolean;
   difficulty: number;
@@ -19,7 +26,7 @@ export const clampDifficulty = (v: number): number => {
 
 export function defaultSettings(games: readonly Game[]): GameSettings {
   return Object.fromEntries(
-    games.map((g) => [g.id, { enabled: true, difficulty: DIFFICULTY.default }]),
+    games.map((g) => [g.id, { enabled: enabledByDefault(g.id), difficulty: DIFFICULTY.default }]),
   );
 }
 

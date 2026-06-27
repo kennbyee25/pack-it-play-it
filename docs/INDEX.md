@@ -24,6 +24,8 @@ trains humans, tests algorithms, and (eventually) trains/tests AI on NP-complete
 - **[plans/infinite-adaptive-mode.md](./plans/infinite-adaptive-mode.md)** — endless mode +
   skill-rating (Glicko/Elo) dynamic difficulty. *Partially shipped* (`settings.ts`,
   `adaptive.ts`); this is the reference for the full version.
+- **[plans/telemetry-layer.md](./plans/telemetry-layer.md)** — MVP 5: structured trace capture
+  → Supabase, the difficulty oracle, and P4 metadata. *Shipped (code); backend needs setup.*
 
 ## Research
 
@@ -53,24 +55,27 @@ graph-coloring, hamiltonian, directed-hamiltonian, steiner-tree, set-cover, set-
 exact-cover, hitting-set, 3d-matching, knapsack, subset-sum, partition, integer-programming,
 nonogram. Each game gets per-game difficulty + selection, spacebar/auto-advance, per-puzzle
 reset + timer + move counter, and **heuristic** optimal-challenge difficulty (`adaptive.ts`).
-A shared **conformance suite** holds every game to the same contract; 200 unit/component tests
+A shared **conformance suite** holds every game to the same contract; 345 unit/component tests
 green. The interleaved-vs-blocked **scheduler** (`scheduler.ts`) is in place. CI (typecheck +
 unit + e2e) and GitHub Pages deploy run on every push to `main`. Live:
 https://kennbyee25.github.io/pack-it-play-it/
 
-> **Substrate vs. science.** What's shipped is the *substrate* — roughly the engineering spine
-> of MVP 1 (flow-loop shell), MVP 2 (multi-game engine + registry), and MVP 4 (scheduler). The
-> *science instrumentation* (skill estimator, outcome scorer, calibration, solvers, telemetry,
-> experiment harness) is **not built yet** — see the roadmap.
+> **Substrate + science.** Beyond the substrate (engine, scheduler, flow-loop shell), the
+> *science instrumentation* is now largely built: **solver layer** (17/19 games, `src/games/solvers/`),
+> **MVP 0** estimator/scorer/monotonicity sim and **MVP 2** cross-game calibration
+> (`src/games/skill/`), and **MVP 5** telemetry + difficulty oracle (`src/telemetry/`,
+> `analysis/`). Remaining gaps: weak-knob generator tuning and the MVP 3 transfer experiment.
 
 ## Highest-leverage next steps
 
-The Karp-21 breadth-fill is essentially **done** (19 games). Current plan:
+Shipped: Karp-21 breadth-fill (19 games), solver layer (17/19), **MVP 0**, **MVP 2** calibration,
+**MVP 5** telemetry + difficulty oracle, and **P4 metadata** (`category`/`reductionFrom`).
+Current plan:
 
-1. **Solver layer** ([plans/solver-layer.md](./plans/solver-layer.md)) — unlocks the
-   algorithm-testing pillar, unique-solution generation, *and* MVP2 calibration (solver as a
-   reference player) in one stroke. **In progress.**
-2. **MVP 0 — measurable difficulty & skill** — Glicko/Elo-lite estimator + outcome scorer +
-   an offline simulation that validates monotonic difficulty (the A2 kill-criterion gate).
-3. **`category` + `reductionFrom` metadata** — cheap, and it's what the transfer experiment
-   (MVP3) needs.
+1. **Stand up the Supabase backend** — create the project + run `supabase/schema.sql`, set
+   `VITE_SUPABASE_*`, so live traces flow (see [plans/telemetry-layer.md](./plans/telemetry-layer.md)).
+2. **Tune the weak-knob generators** so more games join the common scale: 3-SAT (re-enable once
+   monotonic), knapsack, max-cut, steiner-tree, hitting-set, and the too-hard-at-D0 set
+   (clique, hamiltonian, directed-hamiltonian).
+3. **MVP 3 — transfer experiment** ★ the crown-jewel A3 bet (experiment harness + cohorts +
+   pre-registered stats; runs first as an offline simulation; consumes the MVP 5 trace substrate).

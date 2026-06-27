@@ -30,6 +30,8 @@ jobs:
       - name: Build (production, served at /pack-it-play-it/)
         env:
           GITHUB_PAGES: "true"
+          # Telemetry sink (MVP 5). Empty → NoopSink (no collection).
+          VITE_TRACE_URL: ${{ secrets.VITE_TRACE_URL }}
         run: npm run build
 
       - name: SPA fallback (client-side routing)
