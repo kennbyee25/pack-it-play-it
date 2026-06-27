@@ -48,38 +48,92 @@ export class SupabaseSink implements TraceSink {
     if (this.buffer.length === 0) return;
     const batch = this.buffer;
     this.buffer = [];
-    const endpoint = `${this.cfg.url}/rest/v1/${this.cfg.table}`;
-    // Store each event as a row: { type, session_id, puzzle_id, ts, payload }.
-    const rows = batch.map((e) => ({
-      type: e.type,
-      session_id: e.sessionId,
-      puzzle_id: e.puzzleId,
-      ts: e.ts,
-      payload: e,
-    }));
+    const ok = await postRows(
+      `${this.cfg.url}/rest/v1/${this.cfg.table}`,
+      {
+        apikey: this.cfg.anonKey,
+        Authorization: `Bearer ${this.cfg.anonKey}`,
+        Prefer: 'return=minimal',
+      },
+      batch,
+      this.cfg.fetchImpl,
+      this.cfg.maxRetries,
+    );
+    if (!ok) this.buffer = batch.concat(this.buffer); // requeue for a later flush
+  }
+}
 
-    for (let attempt = 0; attempt <= this.cfg.maxRetries; attempt++) {
-      try {
-        const res = await this.cfg.fetchImpl(endpoint, {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-            apikey: this.cfg.anonKey,
-            Authorization: `Bearer ${this.cfg.anonKey}`,
-            Prefer: 'return=minimal',
-          },
-          body: JSON.stringify(rows),
-        });
-        if (res.ok) return;
-      } catch {
-        // network error — fall through to retry/backoff
-      }
-      if (attempt < this.cfg.maxRetries) {
-        await new Promise((r) => setTimeout(r, 100 * 2 ** attempt));
-      }
+// Map events to row shape { type, session_id, puzzle_id, ts, payload } and POST
+// them with retry/backoff. Returns false if all attempts failed (caller requeues).
+function toRows(batch: TraceEvent[]) {
+  return batch.map((e) => ({
+    type: e.type,
+    session_id: e.sessionId,
+    puzzle_id: e.puzzleId,
+    ts: e.ts,
+    payload: e,
+  }));
+}
+
+async function postRows(
+  endpoint: string,
+  headers: Record<string, string>,
+  batch: TraceEvent[],
+  fetchImpl: typeof fetch,
+  maxRetries: number,
+): Promise<boolean> {
+  const body = JSON.stringify(toRows(batch));
+  for (let attempt = 0; attempt <= maxRetries; attempt++) {
+    try {
+      const res = await fetchImpl(endpoint, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', ...headers },
+        body,
+      });
+      if (res.ok) return true;
+    } catch {
+      // network error — fall through to retry/backoff
     }
-    // Give up: requeue so a later flush can retry (crash-safety left to caller).
-    this.buffer = batch.concat(this.buffer);
+    if (attempt < maxRetries) await new Promise((r) => setTimeout(r, 100 * 2 ** attempt));
+  }
+  return false;
+}
+
+// Self-hosted ingest sink: POSTs the same rows to a plain `${url}/traces` endpoint
+// (our Tailscale-Funnel'd ingest service). No auth headers — the server is
+// insert-only and CORS-restricted to the Pages origin.
+export interface HttpSinkConfigSelf {
+  url: string;
+  batchSize?: number;
+  maxRetries?: number;
+  fetchImpl?: typeof fetch;
+}
+
+export class HttpSink implements TraceSink {
+  private buffer: TraceEvent[] = [];
+  private readonly url: string;
+  private readonly batchSize: number;
+  private readonly maxRetries: number;
+  private readonly fetchImpl: typeof fetch;
+
+  constructor(cfg: HttpSinkConfigSelf) {
+    this.url = cfg.url.replace(/\/$/, '');
+    this.batchSize = cfg.batchSize ?? 20;
+    this.maxRetries = cfg.maxRetries ?? 3;
+    this.fetchImpl = cfg.fetchImpl ?? fetch.bind(globalThis);
+  }
+
+  emit(event: TraceEvent): void {
+    this.buffer.push(event);
+    if (this.buffer.length >= this.batchSize) void this.flush();
+  }
+
+  async flush(): Promise<void> {
+    if (this.buffer.length === 0) return;
+    const batch = this.buffer;
+    this.buffer = [];
+    const ok = await postRows(`${this.url}/traces`, {}, batch, this.fetchImpl, this.maxRetries);
+    if (!ok) this.buffer = batch.concat(this.buffer);
   }
 }
 
@@ -128,11 +182,13 @@ function safeStorage(): Storage | undefined {
 
 // Pick the sink from Vite env. On by default; NoopSink when unconfigured. The
 // opt-out is applied live via guardedSink (see tracer), so toggling needs no reload.
+// Precedence: self-hosted ingest (VITE_TRACE_URL) → Supabase → Noop.
 export function makeSink(env: Record<string, string | undefined> = importMetaEnv()): TraceSink {
+  if (env.VITE_TRACE_URL) return new HttpSink({ url: env.VITE_TRACE_URL });
   const url = env.VITE_SUPABASE_URL;
   const anonKey = env.VITE_SUPABASE_ANON_KEY;
-  if (!url || !anonKey) return NoopSink;
-  return new SupabaseSink({ url, anonKey });
+  if (url && anonKey) return new SupabaseSink({ url, anonKey });
+  return NoopSink;
 }
 
 function importMetaEnv(): Record<string, string | undefined> {

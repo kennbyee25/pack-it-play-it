@@ -3,7 +3,7 @@ import { makeRng } from '../games/rng';
 import { getGame, GAME_IDS } from '../games/registry';
 import { applySolution } from '../games/types';
 import { createTracer } from './tracer';
-import { SupabaseSink, NoopSink, type TraceSink } from './sink';
+import { SupabaseSink, HttpSink, NoopSink, makeSink, type TraceSink } from './sink';
 import { replayVerify } from './replay';
 import type { TraceEvent } from './types';
 
@@ -88,6 +88,32 @@ describe('SupabaseSink', () => {
     await sink.flush();
     // initial + 2 retries = 3 attempts
     expect(fetchImpl).toHaveBeenCalledTimes(3);
+  });
+});
+
+describe('HttpSink (self-hosted ingest)', () => {
+  const ev = (i: number): TraceEvent => ({
+    type: 'move', sessionId: 's', puzzleId: 's:0', ts: i, moveIndex: i, move: {}, msSinceStart: i,
+  });
+
+  it('POSTs rows to ${url}/traces with no auth headers', async () => {
+    const fetchImpl = vi.fn(async () => new Response(null, { status: 200 }));
+    const sink = new HttpSink({ url: 'https://pip-ingest.example.ts.net/', batchSize: 5, fetchImpl: fetchImpl as unknown as typeof fetch });
+    sink.emit(ev(0));
+    await sink.flush();
+    expect(fetchImpl).toHaveBeenCalledTimes(1);
+    const [endpoint, init] = fetchImpl.mock.calls[0];
+    expect(endpoint).toBe('https://pip-ingest.example.ts.net/traces');
+    expect((init as RequestInit).headers).not.toHaveProperty('apikey');
+    expect(JSON.parse((init as RequestInit).body as string)[0]).toMatchObject({ type: 'move', session_id: 's' });
+  });
+});
+
+describe('makeSink precedence', () => {
+  it('prefers VITE_TRACE_URL → HttpSink, then Supabase, then Noop', () => {
+    expect(makeSink({ VITE_TRACE_URL: 'https://x.ts.net' })).toBeInstanceOf(HttpSink);
+    expect(makeSink({ VITE_SUPABASE_URL: 'https://x.supabase.co', VITE_SUPABASE_ANON_KEY: 'k' })).toBeInstanceOf(SupabaseSink);
+    expect(makeSink({})).toBe(NoopSink);
   });
 });
 
