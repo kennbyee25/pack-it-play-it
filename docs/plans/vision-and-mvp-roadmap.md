@@ -378,6 +378,16 @@ flowchart LR
 
 ## MVP 5 — Solver Telemetry (parallel track)
 
+> **Status (2026-06-27): ✅ shipped (code); backend needs a Supabase project.** See
+> [telemetry-layer.md](./telemetry-layer.md). Structured trace stream
+> (puzzle_started → move → puzzle_ended) captured at the GamePlayer/EndlessMode choke points,
+> sent via a transport-agnostic sink to **Supabase Postgres** (RLS insert-only). Traces carry no
+> PII and store `(gameId, difficulty, genSeed)` so puzzles are reconstructable; `replayVerify`
+> proves faithful capture. Downstream use delivered: a **difficulty oracle / hard-instance miner**
+> (`analysis/difficulty_oracle.py`). Bundled **P4 metadata** (`category` + `reductionFrom`).
+> Collection is anonymous, on by default, with an opt-out toggle. **Next:** stand up the Supabase
+> project + run `supabase/schema.sql`; then MVP 3 (transfer) consumes this substrate.
+
 **Bet (AI/data value):** Human solution *traces* are structured, high-value data — enough
 to benchmark/train a solver or to mine hard instances.
 
