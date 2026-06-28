@@ -26,6 +26,9 @@ trains humans, tests algorithms, and (eventually) trains/tests AI on NP-complete
   `adaptive.ts`); this is the reference for the full version.
 - **[plans/telemetry-layer.md](./plans/telemetry-layer.md)** — MVP 5: structured trace capture
   → Supabase, the difficulty oracle, and P4 metadata. *Shipped (code); backend needs setup.*
+- **[plans/game-design-goals.md](./plans/game-design-goals.md)** — the three design goals
+  (NP-complete · unique-optimal · add-don't-modify), the scaffolding principle, big-bet vs
+  QoL notes, and new-game ideas.
 
 ## Research
 
@@ -34,7 +37,13 @@ trains humans, tests algorithms, and (eventually) trains/tests AI on NP-complete
   nominal difficulty), ZPDES learning-progress bandits, BKT mastery, desirable difficulties —
   each mapped to a concrete pip mechanic, with a staged upgrade path for `adaptive.ts`.
 
-## Analysis: `v0-np-complete-gamebox`
+## Analysis
+
+- **[analysis/telemetry-findings.md](./analysis/telemetry-findings.md)** — living, log-driven
+  findings from the live MVP 5 traces (post-solve moves, idle-time, per-game success/fail),
+  and the path from vibes → Python analysis → dashboards.
+
+### `v0-np-complete-gamebox`
 
 Study of the sibling project ([repo](https://github.com/kennbyee25/v0-np-complete-gamebox))
 and how to fold its best ideas in here.
