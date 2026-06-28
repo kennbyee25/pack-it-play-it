@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from 'react';
 import type { PuzzleGame, Generated } from '@/games/types';
 import type { SolveMetrics } from '@/games/adaptive';
+import { accrueActive } from '@/games/activeTime';
 import { Button } from '@/components/ui/button';
 import { RotateCcw } from 'lucide-react';
 import { GraphBoard } from '@/games/_renderers/GraphBoard';
@@ -52,13 +53,18 @@ export function GamePlayer({ game, generated, onSolved, onMove, onReset, canReve
   const [moves, setMoves] = useState(0);
   const [seconds, setSeconds] = useState(0);
   const startRef = useRef(Date.now());
+  // Idle-resistant active time + the timestamp of the last counted action.
+  const activeMsRef = useRef(0);
+  const lastEventRef = useRef(Date.now());
 
-  // New puzzle: reset board, moves, and the clock.
+  // New puzzle: reset board, moves, the clock, and active-time accounting.
   useEffect(() => {
     setState(generated.puzzle);
     setMoves(0);
     setSeconds(0);
     startRef.current = Date.now();
+    activeMsRef.current = 0;
+    lastEventRef.current = Date.now();
   }, [generated]);
 
   const solved = game.isSolved(state);
@@ -72,7 +78,13 @@ export function GamePlayer({ game, generated, onSolved, onMove, onReset, canReve
   }, [solved, generated]);
 
   const applyMove = (m: any) => {
-    onMove?.(m, moves, Date.now() - startRef.current);
+    // Lock the board once solved: ignore stray clicks (e.g. the nonogram success
+    // banner offsetting the grid) so post-solve moves never invalidate the trace.
+    if (solved) return;
+    const now = Date.now();
+    activeMsRef.current = accrueActive(activeMsRef.current, now - lastEventRef.current);
+    lastEventRef.current = now;
+    onMove?.(m, moves, now - startRef.current);
     setState((s: any) => game.applyMove(s, m));
     setMoves((n) => n + 1);
   };
@@ -99,7 +111,7 @@ export function GamePlayer({ game, generated, onSolved, onMove, onReset, canReve
       onSolved?.({
         moves,
         optimalMoves: generated.solution.length,
-        seconds: Math.floor((Date.now() - startRef.current) / 1000),
+        seconds: Math.round(activeMsRef.current / 1000), // idle-capped active time
       });
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -114,7 +126,10 @@ export function GamePlayer({ game, generated, onSolved, onMove, onReset, canReve
         <span className="text-sm text-muted-foreground tabular-nums" aria-label="timer">{seconds}s</span>
         {solved && <span className="text-piece-teal font-medium" aria-label="solved">Solved! 🎉</span>}
       </div>
-      <Board game={game} state={state} onMove={applyMove} />
+      {/* Once solved, disable interaction so stray clicks can't register. */}
+      <div className={solved ? 'pointer-events-none opacity-90' : undefined} aria-disabled={solved}>
+        <Board game={game} state={state} onMove={applyMove} />
+      </div>
       <div className="flex items-center gap-2">
         {!solved && (
           <Button variant="outline" size="sm" aria-label="reset puzzle" onClick={resetPuzzle}>
