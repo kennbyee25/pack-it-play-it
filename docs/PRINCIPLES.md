@@ -84,3 +84,19 @@ for difficulty control; **uniqueness** is a separate quality bar (see the solver
 
 - Confirm before irreversible/outward actions (force-push, making a repo public, deploys).
 - CI gates every push (typecheck + unit + e2e); Pages deploys from `main`. Keep them green.
+- **Run CI's exact typecheck before pushing:** `npx tsc --noEmit -p tsconfig.app.json`
+  (it includes test files; plain `tsc --noEmit` misses errors in tests).
+
+## 9. Game design goals
+
+Three north-star goals govern new games (full detail + tiered notes in
+[plans/game-design-goals.md](./plans/game-design-goals.md)):
+
+1. **Prefer NP-complete.**
+2. **Prefer a unique optimal/correct solution** — "single correctness" makes "perfect
+   solution" well-defined, so success/fail is crisp (undo/skip/reset count as fail).
+3. **Add games, don't modify** — "replace" by disabling the old game (`DEFAULT_DISABLED`).
+
+Plus the **scaffolding principle**: give each puzzle as much visual/spatial context as
+possible (colored meters, unique color+shape+location) — prefer spatial framings over raw
+notation.
