@@ -41,4 +41,19 @@ describe('GamePlayer', () => {
       expect.objectContaining({ moves: g.solution.length, optimalMoves: g.solution.length }),
     );
   });
+
+  it('locks the board after solve — post-solve clicks are ignored', () => {
+    const g = gen();
+    const onMove = vi.fn();
+    render(<GamePlayer game={setCover} generated={g} canRevealSolution onMove={onMove} />);
+    fireEvent.click(screen.getByRole('button', { name: /show solution/i }));
+    expect(screen.getByLabelText('solved')).toBeInTheDocument();
+    const callsAtSolve = onMove.mock.calls.length; // = solution length
+    const movesAtSolve = screen.getByLabelText('moves').textContent;
+
+    // A stray click on a board cell after solving must do nothing.
+    fireEvent.click(screen.getByRole('button', { name: 'subset-0' }));
+    expect(onMove).toHaveBeenCalledTimes(callsAtSolve);
+    expect(screen.getByLabelText('moves')).toHaveTextContent(movesAtSolve!);
+  });
 });
