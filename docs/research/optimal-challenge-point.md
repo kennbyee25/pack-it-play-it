@@ -116,12 +116,16 @@ estimate.
 Today (`src/games/adaptive.ts`): `optimal moves & ≤30s → +250; mistake or >45s → −250`. A
 reasonable DDA bootstrap, but skill-blind and success-targeted, not OCP/learning-progress.
 
-- **Stage 0 (shipped).** Heuristic challenge function on moves+time.
-- **Stage 1 — skill model + challenge band.** Add a per-game skill estimate (Glicko-lite from
-  [infinite-adaptive-mode.md](../plans/infinite-adaptive-mode.md), or BKT mastery). Convert the
-  solve into a continuous **performance score** (already have moves-vs-optimal + time). Drive
-  difficulty so *expected* performance sits in the functional-difficulty band (≈ high-but-not-
-  certain success), not a fixed step. Pure, unit-testable.
+- **Stage 0 (superseded).** Heuristic challenge function on moves+time (`adaptive.ts`) — no
+  longer wired into the live loop; kept for reference.
+- **Stage 1 — skill model + challenge band. ✅ SHIPPED (2026-06-28).** Per-game **Glicko-lite**
+  ratings (`src/games/skill/ratings.ts`, persisted via `useRatings`) updated each attempt from a
+  continuous **performance score** (`scorer.ts`: solved + time + moves-vs-optimal). The next
+  difficulty is chosen by the **Optimal Challenge Point selector** (`src/games/skill/challenge.ts`):
+  `selectChallenge` targets ~0.8 success and adds **rd-scaled jitter** so OCP is a *band/
+  distribution*, not a point. Wired into `EndlessMode` (replaces the heuristic). A simulation test
+  proves realized success holds in the band and the rating converges to true skill (note: a mild
+  upward bias during convergence for fast-rising skill, since 0.8-target wins carry less info).
 - **Stage 2 — learning-progress bandit (ZPDES).** Track recent performance slope per
   (game, difficulty band). A UCB/Thompson selector picks the next game+difficulty maximizing
   empirical learning progress → unifies the interleaving scheduler and the difficulty knob into

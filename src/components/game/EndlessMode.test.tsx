@@ -48,6 +48,19 @@ describe('EndlessMode (integration)', () => {
     }
   });
 
+  it('records a per-game Glicko rating on advance', async () => {
+    const user = userEvent.setup();
+    render(<EndlessMode seed={1} />);
+    await user.click(screen.getByRole('button', { name: /next puzzle/i }));
+    const stored = window.localStorage.getItem('pip.ratings');
+    expect(stored).toBeTruthy();
+    const ratings = JSON.parse(stored!) as Record<string, { skill: number; rd: number }>;
+    expect(Object.keys(ratings).length).toBeGreaterThanOrEqual(1);
+    const first = Object.values(ratings)[0];
+    expect(typeof first.skill).toBe('number');
+    expect(first.rd).toBeLessThan(400); // rd shrank after one recorded outcome
+  });
+
   it('changing the rotation re-rolls back to puzzle #1', async () => {
     const user = userEvent.setup();
     render(<EndlessMode seed={1} />);
