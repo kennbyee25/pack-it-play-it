@@ -16,7 +16,10 @@ export interface SkillEstimate {
   rd: number; // rating deviation: how uncertain we are
 }
 
-export const newPlayer = (skill = ELO.startSkill, rd = ELO.startRd): SkillEstimate => ({ skill, rd });
+export const newPlayer = (skill: number = ELO.startSkill, rd: number = ELO.startRd): SkillEstimate => ({
+  skill,
+  rd,
+});
 
 // Logistic expected score (probability-like) that a player of `skill` solves a
 // puzzle of rating `difficulty`. Monotonic decreasing in difficulty.

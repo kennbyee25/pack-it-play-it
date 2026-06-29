@@ -3,10 +3,12 @@ import { getGame } from '@/games/registry';
 import { buildSchedule } from '@/games/scheduler';
 import { makeRng } from '@/games/rng';
 import { DIFFICULTY, enabledGameIds } from '@/games/settings';
-import { adaptDifficulty, easeDifficulty, type SolveMetrics } from '@/games/adaptive';
+import { type SolveMetrics } from '@/games/adaptive';
 import { scoreOutcome } from '@/games/skill/scorer';
+import { selectChallenge } from '@/games/skill/challenge';
 import { tracer } from '@/telemetry/tracer';
 import { useGameSettings } from '@/hooks/useGameSettings';
+import { useRatings } from '@/hooks/useRatings';
 import { GamePlayer } from './GamePlayer';
 import { PuzzleErrorBoundary } from './PuzzleErrorBoundary';
 import { SessionSettings } from './SessionSettings';
@@ -69,9 +71,11 @@ export function EndlessMode({ seed: seedProp }: { seed?: number } = {}) {
   // re-randomize — but never just because options re-rendered.
   const generated = useMemo(() => game.generate(difficulty, makeRng(genSeed)), [game, difficulty, genSeed]);
 
-  // Adaptive difficulty change is computed on solve but applied on advance, so it
-  // never disrupts the just-solved puzzle.
-  const pendingAdapt = useRef<{ gameId: string; difficulty: number } | null>(null);
+  // Per-game Glicko ratings drive the next difficulty via the Optimal Challenge
+  // Point selector (replaces the old heuristic adaptDifficulty). A stable rng gives
+  // the OCP band its jitter; deterministic/e2e mode omits it for stable runs.
+  const { recordOutcome } = useRatings();
+  const ocpRng = useRef(makeRng(((fixedSeed ?? orderSeed) ^ 0x5bd1e995) >>> 0));
   // Per-puzzle outcome flags (reset below). `failed` = the player hit Reset,
   // which counts as a fail even if they later solve it.
   const solvedRef = useRef(false);
@@ -108,29 +112,18 @@ export function EndlessMode({ seed: seedProp }: { seed?: number } = {}) {
     const moves = m?.moves ?? lastMoveRef.current.count;
     const seconds = m?.seconds ?? Math.floor(lastMoveRef.current.ms / 1000);
     const optimalMoves = optimalMovesRef.current;
-    tracer.puzzleEnded({
-      outcome,
-      moves,
-      optimalMoves,
-      seconds,
-      score: scoreOutcome({ solved: cleanSolve, moves, optimalMoves, seconds }),
-    });
+    const score = scoreOutcome({ solved: cleanSolve, moves, optimalMoves, seconds });
+    tracer.puzzleEnded({ outcome, moves, optimalMoves, seconds, score });
 
-    if (solvedRef.current && !failedRef.current) {
-      // Clean solve: apply the difficulty change the solve earned (if any).
-      const p = pendingAdapt.current;
-      if (p) {
-        setDifficulty(p.gameId, p.difficulty);
-        pendingAdapt.current = null;
-      }
-    } else {
-      // Skipped or reset (failed): ease this game.
-      const eased = easeDifficulty(difficulty);
-      if (eased !== difficulty) setDifficulty(item.gameId, eased);
-    }
+    // Update this game's skill rating with the served difficulty + score, then pick
+    // the next difficulty at the Optimal Challenge Point for the updated rating.
+    const rating = recordOutcome(item.gameId, difficulty, score);
+    const next = selectChallenge(rating, deterministic ? undefined : ocpRng.current);
+    setDifficulty(item.gameId, next);
+
     setIndex((i) => i + 1);
     if (!deterministic) setRand(randSeed());
-  }, [deterministic, setDifficulty, item.gameId, difficulty]);
+  }, [deterministic, setDifficulty, recordOutcome, item.gameId, difficulty]);
 
   // Auto-advance preference (off in deterministic/e2e mode so tests drive it).
   const [autoNext, setAutoNext] = useState(() => {
@@ -154,15 +147,14 @@ export function EndlessMode({ seed: seedProp }: { seed?: number } = {}) {
       setSolvedCount((c) => c + 1);
       solvedRef.current = true;
       solveMetricsRef.current = metrics;
-      // Adaptive challenge: tune THIS game's difficulty based on the solve.
-      const next = adaptDifficulty(difficulty, metrics);
-      if (next !== difficulty) pendingAdapt.current = { gameId: item.gameId, difficulty: next };
+      // Rating update + next difficulty happen in advance() (the single outcome
+      // point), so a clean solve and a skip/fail flow through the same path.
       if (autoNext) {
         clearTimeout(timer.current);
         timer.current = setTimeout(advance, 900);
       }
     },
-    [autoNext, advance, difficulty, item.gameId],
+    [autoNext, advance],
   );
 
   // Spacebar advances, unless focus is on an interactive control.
