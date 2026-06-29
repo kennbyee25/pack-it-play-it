@@ -289,6 +289,16 @@ flowchart TD
 
 ## MVP 3 — Transfer Experiment ★ (make or break)
 
+> **Status (2026-06-29): ⚙️ harness built + offline-validated; awaiting human cohorts.**
+> `src/games/experiment/` — synthetic agents with a tunable transfer coefficient `k`
+> (`transfer.ts`), randomized balanced cohorts, a contamination-guarded held-out game, a
+> Glicko cold-start probe (reuses the real estimator), and a pre-registered decision
+> (Welch t / Cohen's d / 95% CI; `stats.ts`). **Controls pass:** over 20 seeds, k=0 →
+> transfer detected 1/20 (≈5% — the designed Type-I rate), k=0.4 → 20/20 (~85 Elo lift),
+> k=0.8 → 20/20 (~146 Elo). So the harness can both **find** a real effect and **fail to
+> find** a phantom one before any real-player time is spent. Next: human-validate the live
+> Glicko/OCP loop + accrue cohorts, then run it for real.
+
 **Bet (A3 — crown jewel):** Training on game(s) A improves **cold-start** performance on a
 *previously unseen* game B, beyond what a control group achieves.
 
