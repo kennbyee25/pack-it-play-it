@@ -23,17 +23,17 @@ export const DEFAULT_OUTCOME_WEIGHTS = {
 /**
  * Compute timeScore: how close actual time is to expected time for given difficulty.
  * Expected time increases with difficulty (harder puzzles take longer).
- * We'll use a simple linear mapping: expectedTime = baseTime * (D / midDifficulty)
- * where baseTime is expected time at mid difficulty.
- * For simplicity we treat timeScore = clamp(expected / actual, 0, 2) / 2
- * so that perfect time gives 1, half time gives 1, double time gives 0.5, etc.
+ * We want:
+ *   - If actual time <= expected time: score = 1 (you were at least as fast as expected)
+ *   - If actual time >= 2 * expected time: score = 0.5
+ *   - Linear between 1 and 2 * expected time.
  */
 function timeScore(actualSeconds: number, expectedSeconds: number): number {
-  if (actualSeconds === 0) return 2; // extremely fast -> max
-  const ratio = expectedSeconds / actualSeconds;
-  // clamp ratio to [0,2] then map to [0,1]
-  const clamped = Math.min(2, Math.max(0, ratio));
-  return clamped / 2;
+  if (actualSeconds === 0) return 1; // extremely fast -> max
+  const ratio = actualSeconds / expectedSeconds;
+  if (ratio <= 1) return 1;
+  if (ratio >= 2) return 0.5;
+  return 1.5 - 0.5 * ratio; // linear from (1,1) to (2,0.5)
 }
 
 /**
@@ -46,7 +46,7 @@ function moveScore(actualMoves: number, optimalMoves: number): number {
 }
 
 /**
- * Compute hintPenalty: each hint reduces score linearly; we map to [0,1]
+ * Compute hintScore: each hint reduces score linearly; we map to [0,1]
  * assuming maxHintPenalty hints yields zero.
  */
 function hintScore(hintsUsed: number, maxHintPenalty: number = 5): number {
@@ -69,14 +69,8 @@ export function computeOutcome(
   weights = DEFAULT_OUTCOME_WEIGHTS
 ): number {
   if (!solved) {
-    // If not solved, outcome is based only on effort? We'll give a small base.
-    // Could also be zero; but we want some signal for learning.
-    // We'll compute effort components but zero out solved component.
-    const base =
-      weights.time * timeScore(metrics.seconds, expectedTime(difficulty)) +
-      weights.moves * moveScore(metrics.moves, metrics.optimalMoves) +
-      weights.hints * hintScore(metrics.hintsUsed);
-    return base;
+    // If not solved, outcome is 0 (no points for effort in this model)
+    return 0;
   }
 
   const expected = expectedTime(difficulty);
@@ -96,7 +90,7 @@ export function computeOutcome(
 
 /**
  * Expected time to solve a puzzle of given difficulty.
- * Simple linear mapping: difficulty 100 -> 30s, difficulty 2500 -> 120s.
+ * Simple linear mapping: difficulty 100 -> 20s, difficulty 2500 -> 120s.
  * Adjust as needed.
  */
 function expectedTime(D: number): number {

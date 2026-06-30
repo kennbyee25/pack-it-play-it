@@ -52,13 +52,21 @@ describe('EndlessMode (integration)', () => {
     const user = userEvent.setup();
     render(<EndlessMode seed={1} />);
     await user.click(screen.getByRole('button', { name: /next puzzle/i }));
-    const stored = window.localStorage.getItem('pip.ratings');
+
+    // Check that at least one rating was stored
+    const ratingKeys = Object.keys(window.localStorage).filter(key =>
+      key.startsWith('pip.skill.rating.')
+    );
+    expect(ratingKeys.length).toBeGreaterThan(0);
+
+    // Check the first one
+    const ratingKey = ratingKeys[0];
+    const stored = window.localStorage.getItem(ratingKey);
     expect(stored).toBeTruthy();
-    const ratings = JSON.parse(stored!) as Record<string, { skill: number; rd: number }>;
-    expect(Object.keys(ratings).length).toBeGreaterThanOrEqual(1);
-    const first = Object.values(ratings)[0];
-    expect(typeof first.skill).toBe('number');
-    expect(first.rd).toBeLessThan(400); // rd shrank after one recorded outcome
+    const rating = JSON.parse(stored!);
+    expect(typeof rating.skill).toBe('number');
+    expect(typeof rating.rd).toBe('number');
+    expect(rating.rd).toBeLessThan(400); // rd shrank after one recorded outcome
   });
 
   it('changing the rotation re-rolls back to puzzle #1', async () => {

@@ -1,47 +1,53 @@
-import { SolveMetrics, computeOutcome, DEFAULT_OUTCOME_WEIGHTS } from '../outcome';
+import { describe, it, expect } from 'vitest';
+import { SolveMetrics, computeOutcome } from '../outcome';
 
-test('computeOutcome clamps to [0,1]', () => {
-  // Unsolved is zero
-  expect(computeOutcome(false, {} as SolveMetrics, 100)).toEqual(0);
-  // Solved but perfect score
-  const perfect: SolveMetrics = {
-    moves: 3,
-    optimalMoves: 3,
-    seconds: 10,
-    hintsUsed: 0,
-  };
-  const diff100 = expectedTime(100);
-  // Mock expectedTime for test: say expected=15
-  const expectedTime = (_D: number) => 15;
-  jest.spyOn(global.Math, 'max').mockImplementationOnce((a, b) => Math.max(a, b));
-  jest.spyOn(global.Math, 'min').mockImplementationOnce((a, b) => Math.min(a, b));
-  const score = computeOutcome(true, perfect, 100);
-  expect(score).toBeLessThanOrEqual(1);
-});
+// Helper to compute expected time for a given difficulty (same as in outcome.ts)
+function expectedTime(D: number): number {
+  const minDiff = 100;
+  const maxDiff = 2500;
+  const minTime = 20; // seconds at easiest
+  const maxTime = 120; // seconds at hardest
+  // Clamp D to range
+  const clamped = Math.min(maxDiff, Math.max(minDiff, D));
+  const frac = (clamped - minDiff) / (maxDiff - minDiff);
+  return minTime + frac * (maxTime - minTime);
+}
 
-// Simple expectedTime mock for rest of tests
-test('computeOutcome at midpoint difficulty', () => {
-  const MID_DIFFICULTY = 1300;
-  const BASE_TIME_SECONDS = 60;
-  const expectedTime = (D: number) =>
-    BASE_TIME_SECONDS * (D / MID_DIFFICULTY);
+describe('computeOutcome', () => {
+  it('returns 0 for unsolved puzzle', () => {
+    // Unsolved is zero regardless of metrics
+    expect(computeOutcome(false, {} as SolveMetrics, 100)).toEqual(0);
+  });
 
-  // Mock Math.min/max again to avoid clamp
-  jest.spyOn(global.Math, 'min').mockImplementationOnce((a, b) => Math.min(a, b));
-  jest.spyOn(global.Math, 'max').mockImplementationOnce((a, b) => Math.max(a, b));
+  it('returns 1 for perfect metrics at difficulty 1060 (where expected time is 60s)', () => {
+    const difficulty = 1060;
+    const expected = expectedTime(difficulty); // 60
+    const metrics: SolveMetrics = {
+      moves: 5,
+      optimalMoves: 5,
+      seconds: expected,
+      hintsUsed: 0,
+    };
+    const outcome = computeOutcome(true, metrics, difficulty);
+    // For perfect: solved=1, timeScore=1, moveScore=1, hintScore=1
+    // outcome = 0.5*1 + 0.2*1 + 0.2*1 + 0.1*1 = 1.0
+    expect(outcome).toBeCloseTo(1.0);
+  });
 
-  // Perfect metrics at difficulty 1300: expected time 60 seconds
-  const metrics: SolveMetrics = {
-    moves: 5,
-    optimalMoves: 5,
-    seconds: 60,
-    hintsUsed: 0,
-  };
-  const outcome = computeOutcome(true, metrics, 1300);
-  // Weights: solved 0.5, time 0.2, moves 0.2, hints 0.1
-  // timeScore = clamp(expected/actual, 0,2)/2 = 1 → 0.2
-  // moveScore = optimal/actual = 1 → 0.2
-  // hintScore = 1 → 0.1
-  // sum = 0.5*1 + 0.2*1 + 0.2*1 + 0.1*1 = 1 → outcome=1
-  expect(outcome).toBeCloseTo(1);
+  it('returns expected value for imperfect metrics at difficulty 1060', () => {
+    const difficulty = 1060;
+    const expected = expectedTime(difficulty); // 60
+    const metrics: SolveMetrics = {
+      moves: 10, // took twice as many moves as optimal
+      optimalMoves: 5,
+      seconds: 120, // 2 * expected (120s)
+      hintsUsed: 2,
+    };
+    // timeScore: actual=120, expected=60 -> ratio=2 -> timeScore=0.5
+    // moveScore: optimal/actual = 5/10 = 0.5
+    // hintScore: 1 - 2/5 = 0.6
+    // outcome = 0.5*1 + 0.2*0.5 + 0.2*0.5 + 0.1*0.6 = 0.5 + 0.1 + 0.1 + 0.06 = 0.76
+    const outcome = computeOutcome(true, metrics, difficulty);
+    expect(outcome).toBeCloseTo(0.76);
+  });
 });
