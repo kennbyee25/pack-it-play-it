@@ -1,14 +1,12 @@
 name: PR Preview
 
 on:
-  pull_request_target:
+  pull_request:
     types: [opened, synchronize, reopened]
   workflow_dispatch:
 
 permissions:
-  contents: read
-  pages: write
-  id-token: write
+  contents: write
 
 concurrency:
   group: preview-${{ github.event.pull_request.number }}
@@ -25,21 +23,14 @@ jobs:
           cache: npm
       - run: npm ci
       - name: Build preview
-        env:
-          GITHUB_PAGES: "true"
         run: npm run build
       - name: SPA fallback
         run: cp dist/index.html dist/404.html
-      - uses: actions/configure-pages@v5
-      - uses: actions/upload-pages-artifact@v3
+      - name: Deploy PR preview to subdirectory
+        uses: peaceiris/actions-gh-pages@v4
         with:
-          path: dist
-  deploy:
-    needs: build
-    runs-on: ubuntu-latest
-    environment:
-      name: github-pages
-      url: ${{ steps.deployment.outputs.page_url }}
-    steps:
-      - id: deployment
-        uses: actions/deploy-pages@v4
+          github_token: ${{ secrets.GITHUB_TOKEN }}
+          publish_dir: ./dist
+          publish_branch: gh-pages
+          destination_dir: pr/${{ github.event.pull_request.number }}
+          keep_files: true
