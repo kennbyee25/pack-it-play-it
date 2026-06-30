@@ -87,6 +87,35 @@ export function parse(json: string | null): Partial<GameSettings> | null {
   }
 }
 
+// ── Session options (global, not per-game) ────────────────────────────────────
+
+export interface SessionOptions {
+  uniqueSolution: boolean;
+}
+
+export const SESSION_OPTIONS_KEY = 'pip.sessionOptions';
+
+export const defaultSessionOptions = (): SessionOptions => ({ uniqueSolution: false });
+
+export function serializeSessionOptions(o: SessionOptions): string {
+  return JSON.stringify(o);
+}
+
+export function parseSessionOptions(json: string | null): SessionOptions {
+  if (!json) return defaultSessionOptions();
+  try {
+    const v = JSON.parse(json);
+    if (!v || typeof v !== 'object') return defaultSessionOptions();
+    return {
+      uniqueSolution: typeof v.uniqueSolution === 'boolean' ? v.uniqueSolution : false,
+    };
+  } catch {
+    return defaultSessionOptions();
+  }
+}
+
+// ── Stable session key ──────────────────────────────────────────────────────//
+
 // Stable signature of the bits that affect the schedule (enabled set + difficulties),
 // so consumers can detect "the session changed" cheaply.
 export function sessionKey(settings: GameSettings): string {
