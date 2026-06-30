@@ -1,52 +1,36 @@
 name: PR Preview
 
-# Per-PR ephemeral environments. Each open PR is built and published to
-# https://kennbyee25.github.io/pack-it-play-it/pr-preview/pr-<N>/ and torn
-# down automatically when the PR is closed or merged.
 on:
   pull_request:
-    types: [opened, reopened, synchronize, closed]
+    types: [opened, synchronize, reopened]
+  workflow_dispatch:
 
-# Write access to push/remove the preview subtree on the gh-pages branch.
 permissions:
   contents: write
-  pull-requests: write
 
-# Serialize per-PR so rapid pushes don't race on the gh-pages branch.
 concurrency:
-  group: pages-preview-${{ github.event.number }}
-  cancel-in-progress: true
+  group: preview-${{ github.event.pull_request.number }}
+  cancel-in-progress: false
 
 jobs:
-  preview:
+  build:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-
       - uses: actions/setup-node@v4
         with:
           node-version: 20
           cache: npm
-
-      # Skip the build entirely on close — the action only needs to delete the
-      # subtree in that case.
-      - if: github.event.action != 'closed'
-        run: npm ci
-
-      - name: Build (served at /pack-it-play-it/pr-preview/pr-<N>/)
-        if: github.event.action != 'closed'
-        env:
-          PAGES_BASE: /pack-it-play-it/pr-preview/pr-${{ github.event.number }}/
+      - run: npm ci
+      - name: Build preview
         run: npm run build
-
-      - name: SPA fallback (client-side routing)
-        if: github.event.action != 'closed'
+      - name: SPA fallback
         run: cp dist/index.html dist/404.html
-
-      - name: Deploy / teardown preview
-        uses: rossjrw/pr-preview-action@v1
+      - name: Deploy PR preview to subdirectory
+        uses: peaceiris/actions-gh-pages@v4
         with:
-          source-dir: ./dist
-          preview-branch: gh-pages
-          umbrella-dir: pr-preview
-          action: auto
+          github_token: ${{ secrets.GITHUB_TOKEN }}
+          publish_dir: ./dist
+          publish_branch: gh-pages
+          destination_dir: pr/${{ github.event.pull_request.number }}
+          keep_files: true

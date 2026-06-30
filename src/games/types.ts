@@ -25,6 +25,7 @@ export type Difficulty = number;
 export interface PuzzleGame<TState, TMove> {
   readonly id: string;
   readonly name: string;
+  readonly description?: string;
   readonly archetype: Archetype;
   // Build a guaranteed-solvable instance at difficulty D (generate-solved-then-strip).
   generate(difficulty: Difficulty, rng: Rng): Generated<TState, TMove>;
