@@ -345,7 +345,7 @@ flowchart LR
 
 ---
 
-## MVP 5 — Solver Telemetry (parallel track)
+## MVP 5 — Solver Telemetry (DONE) - Dashboard at `/dashboard`
 
 **Bet (AI/data value):** Human solution *traces* are structured, high-value data — enough
 to benchmark/train a solver or to mine hard instances.
