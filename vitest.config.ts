@@ -19,7 +19,7 @@ export default defineConfig({
     exclude: ['e2e/**', 'node_modules/**'],
     coverage: {
       provider: 'v8',
-      include: ['src/utils/**', 'src/components/game/**'],
+      include: ['src/utils/**', 'src/lib/**', 'src/components/game/**'],
     },
   },
 });
