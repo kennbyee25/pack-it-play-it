@@ -3,7 +3,6 @@ import { getGame } from '@/games/registry';
 import { buildSchedule } from '@/games/scheduler';
 import { makeRng } from '@/games/rng';
 import { DIFFICULTY, enabledGameIds } from '@/games/settings';
-import { adaptDifficulty, type SolveMetrics } from '@/games/adaptive';
 import { generateUnique } from '@/games/uniqueness';
 import { useGameSettings } from '@/hooks/useGameSettings';
 import { useSessionOptions } from '@/hooks/useSessionOptions';
@@ -11,6 +10,25 @@ import { GamePlayer } from './GamePlayer';
 import { SessionSettings } from './SessionSettings';
 import { Button } from '@/components/ui/button';
 import { Switch } from '@/components/ui/switch';
+import { computeOutcome, type SolveMetrics } from '@/adaptive/outcome';
+import {
+  PlayerRating,
+  DEFAULT_RATING,
+  updatePlayer,
+} from '@/games/skill/rating';
+import { selectDifficulty } from '@/games/skill/selectDifficulty';
+import { loadRating, saveRating } from '@/games/skill/storage';
+
+// ── Hysteresis ───────────────────────────────────────────────────────────────
+// Only adjust difficulty when the player is consistently outside the flow band,
+// preventing fluke solves/skips from causing whiplash.
+const HYSTERESIS = {
+  /** Consecutive out-of-band outcomes before difficulty adjustment */
+  threshold: 3,
+  /** Outcomes in [low, high] are "in band" — no adjustment */
+  inBandLow: 0.4,
+  inBandHigh: 0.95,
+} as const;
 
 // The "one box": an interleaved stream of NP-complete puzzles. Solving one (or
 // skipping) advances to the next game in the rotation — no game-over screen.
@@ -31,7 +49,8 @@ export function EndlessMode({ seed: seedProp }: { seed?: number } = {}) {
   const deterministic = fixedSeed !== undefined;
 
   const { settings, setEnabled, setDifficulty, reset } = useGameSettings();
-  const { options: sessionOptions, setOption: setSessionOption } = useSessionOptions();
+  const { options: sessionOptions, setOption: setSessionOption } =
+    useSessionOptions();
   const enabledIds = enabledGameIds(settings);
   const enabledKey = enabledIds.join(',');
 
@@ -54,6 +73,16 @@ export function EndlessMode({ seed: seedProp }: { seed?: number } = {}) {
   const [score, setScore] = useState(0);
   const currentSolvedRef = useRef(false);
 
+  // Pass current game context to callbacks without adding render-cycle deps.
+  const currentCtxRef = useRef({ gameId: '', difficulty: DIFFICULTY.default });
+
+  // Per-game rating map: gameId -> PlayerRating
+  const ratingsRef = useRef<Record<string, PlayerRating>>({});
+
+  // Hysteresis: consecutive out-of-band outcomes per game (used to gate
+  // difficulty changes — only adapt when consistently outside the flow band).
+  const hysteresisRef = useRef<Record<string, number>>({});
+
   // Changing the enabled set restarts the rotation (and re-randomizes); a
   // difficulty change does NOT land here.
   useEffect(() => {
@@ -63,14 +92,49 @@ export function EndlessMode({ seed: seedProp }: { seed?: number } = {}) {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [enabledKey]);
 
+  // Load ratings for enabled games on mount and when enabled set changes
+  useEffect(() => {
+    const newRatings: Record<string, PlayerRating> = {};
+    for (const id of enabledIds) {
+      newRatings[id] = loadRating(id);
+    }
+    ratingsRef.current = newRatings;
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [enabledIds, enabledKey]);
+
+  // When a game is newly enabled, ensure we have a rating for it
+  useEffect(() => {
+    for (const id of enabledIds) {
+      if (!(id in ratingsRef.current)) {
+        ratingsRef.current[id] = loadRating(id);
+      }
+    }
+  }, [enabledIds]);
+
   const item = schedule[index % schedule.length];
   const game = getGame(item.gameId);
-  const difficulty = settings[item.gameId]?.difficulty ?? DIFFICULTY.default;
+
+  // Skill-based difficulty selection (Stage 1 Glicko-lite).
+  const rating = ratingsRef.current[item.gameId] ?? DEFAULT_RATING;
+  const prevDifficulty = currentCtxRef.current.difficulty;
+  const difficulty = selectDifficulty(rating, {
+    pTarget: 0.8,
+    prevDifficulty,
+    maxJump: 100,
+  });
+  currentCtxRef.current = { gameId: item.gameId, difficulty };
+
   const genSeed = (deterministic ? (fixedSeed as number) : rand) + index * 7919;
 
   // Regenerate on advance, difficulty change, re-randomize, or uniqueSolution toggle.
   const generated = useMemo(
-    () => generateUnique(game, difficulty, makeRng(genSeed), { unique: sessionOptions.uniqueSolution }),
+    () =>
+      generateUnique(
+        game,
+        difficulty,
+        makeRng(genSeed),
+        { unique: sessionOptions.uniqueSolution },
+      ),
     // eslint-disable-next-line react-hooks/exhaustive-deps
     [game, difficulty, genSeed, sessionOptions.uniqueSolution],
   );
@@ -80,8 +144,14 @@ export function EndlessMode({ seed: seedProp }: { seed?: number } = {}) {
   const pendingAdapt = useRef<{ gameId: string; difficulty: number } | null>(null);
 
   const advance = useCallback(() => {
-    if (!currentSolvedRef.current) {
+    const { gameId, difficulty: curDiff } = currentCtxRef.current;
+    if (!currentSolvedRef.current && gameId) {
       setScore((s) => s - 50);
+      // Record a skip (outcome=0) — decreases skill, persists.
+      const currentRating = ratingsRef.current[gameId] ?? DEFAULT_RATING;
+      const newRating = updatePlayer(currentRating, curDiff, 0);
+      ratingsRef.current[gameId] = newRating;
+      saveRating(gameId, newRating);
     }
     currentSolvedRef.current = false;
     const p = pendingAdapt.current;
@@ -115,9 +185,39 @@ export function EndlessMode({ seed: seedProp }: { seed?: number } = {}) {
       currentSolvedRef.current = true;
       setSolvedCount((c) => c + 1);
       setScore((s) => s + 50);
-      // Adaptive challenge: tune THIS game's difficulty based on the solve.
-      const next = adaptDifficulty(difficulty, metrics);
-      if (next !== difficulty) pendingAdapt.current = { gameId: item.gameId, difficulty: next };
+
+      const gameId = item.gameId;
+      const currentRating = ratingsRef.current[gameId] ?? DEFAULT_RATING;
+      const outcome = computeOutcome(true, metrics, difficulty);
+      const newRating = updatePlayer(currentRating, difficulty, outcome);
+      ratingsRef.current[gameId] = newRating;
+      saveRating(gameId, newRating);
+
+      // Hysteresis: only adapt when consistently outside the flow band.
+      // Rating updates every puzzle (learning signal), but difficulty only
+      // changes after N consecutive out-of-band outcomes.
+      const inBand =
+        outcome >= HYSTERESIS.inBandLow && outcome <= HYSTERESIS.inBandHigh;
+      if (inBand) {
+        hysteresisRef.current[gameId] = 0;
+      } else {
+        hysteresisRef.current[gameId] =
+          (hysteresisRef.current[gameId] ?? 0) + 1;
+      }
+
+      if (hysteresisRef.current[gameId] >= HYSTERESIS.threshold) {
+        // Select next difficulty based on updated rating
+        const nextDiff = selectDifficulty(newRating, {
+          pTarget: 0.8,
+          prevDifficulty: difficulty,
+          maxJump: 100,
+        });
+        if (nextDiff !== difficulty) {
+          pendingAdapt.current = { gameId, difficulty: nextDiff };
+        }
+        hysteresisRef.current[gameId] = 0;
+      }
+
       if (autoNext) {
         clearTimeout(timer.current);
         timer.current = setTimeout(advance, 900);
@@ -131,7 +231,12 @@ export function EndlessMode({ seed: seedProp }: { seed?: number } = {}) {
     const onKey = (e: KeyboardEvent) => {
       if (e.code !== 'Space' && e.key !== ' ') return;
       const t = e.target as HTMLElement | null;
-      if (t && t.closest('input, textarea, [role="slider"], [role="checkbox"], [role="switch"], button')) {
+      if (
+        t &&
+        t.closest(
+          'input, textarea, [role="slider"], [role="checkbox"], [role="switch"], button',
+        )
+      ) {
         return;
       }
       e.preventDefault();
@@ -142,7 +247,8 @@ export function EndlessMode({ seed: seedProp }: { seed?: number } = {}) {
   }, [advance]);
 
   const canRevealSolution =
-    typeof window !== 'undefined' && new URLSearchParams(window.location.search).has('solve');
+    typeof window !== 'undefined' &&
+    new URLSearchParams(window.location.search).has('solve');
 
   return (
     <div className="flex flex-col items-center gap-4 p-6">
@@ -150,6 +256,9 @@ export function EndlessMode({ seed: seedProp }: { seed?: number } = {}) {
         <span>Puzzle #{index + 1}</span>
         <span aria-label="solved-count">Solved: {solvedCount}</span>
         <span aria-label="score" className={score < 0 ? 'text-destructive' : score > 0 ? 'text-piece-teal' : ''}>Score: {score}</span>
+        <span aria-label="skill" className="text-muted-foreground/70 text-xs">
+          <abbr title="Per-game skill estimate (Glicko-lite)">Skill</abbr>: {Math.round(rating.skill)}
+        </span>
       </div>
       <SessionSettings
         settings={settings}
