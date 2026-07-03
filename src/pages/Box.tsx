@@ -8,7 +8,7 @@ const Box = () => (
       <h1 className="text-lg font-semibold">Pack It, Play It</h1>
       <div className="flex items-center gap-2">
         <NavLink 
-          href="/dashboard" 
+          to="/dashboard" 
           className="text-sm hover:underline"
           activeClassName="text-primary"
         >

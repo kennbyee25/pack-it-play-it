@@ -1,3 +1,5 @@
+import { type PlayerRating, DEFAULT_RATING } from './rating';
+
 // Storage for player ratings per game.
 // Uses localStorage with key `pip.rating.<gameId>`.
 export const RATING_PREFIX = 'pip.rating.';

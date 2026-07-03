@@ -74,7 +74,7 @@ export function EndlessMode({ seed: seedProp }: { seed?: number } = {}) {
   const currentSolvedRef = useRef(false);
 
   // Pass current game context to callbacks without adding render-cycle deps.
-  const currentCtxRef = useRef({ gameId: '', difficulty: DIFFICULTY.default });
+  const currentCtxRef = useRef<{ gameId: string; difficulty: number }>({ gameId: '', difficulty: DIFFICULTY.default });
 
   // Per-game rating map: gameId -> PlayerRating
   const ratingsRef = useRef<Record<string, PlayerRating>>({});

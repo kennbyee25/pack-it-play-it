@@ -2,7 +2,7 @@
 // that yields target success probability p* (e.g., 0.8)
 // Also add exploration jitter based on uncertainty.
 
-import { expectedScore } from './rating';
+import { expectedScore, type PlayerRating } from './rating';
 
 /**
  * Select difficulty D such that expectedScore(skill, D) = p*
