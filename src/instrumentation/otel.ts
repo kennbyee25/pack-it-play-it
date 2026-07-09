@@ -10,8 +10,9 @@ import { SimpleSpanProcessor, SpanProcessor, ReadableSpan } from '@opentelemetry
 import { SpanExporter } from '@opentelemetry';
 
 // Configure OTLP exporter for traces
+const otlpEndpoint = process.env.OTEL_EXPORTER_OTLP_ENDPOINT || 'http://192.168.1.157:4317';
 const traceExporter = new OTLPTraceExporter({
-  url: 'http://localhost:4317/v1/traces', // OTLP collector endpoint for traces
+  url: `${otlpEndpoint}/v1/traces`, // OTLP collector endpoint for traces
 });
 
 // Create the tracer provider

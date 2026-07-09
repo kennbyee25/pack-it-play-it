@@ -15,8 +15,9 @@ const provider = new WebTracerProvider({
 });
 
 // Configure the OTLP exporter to send traces to our collector
+const otlpEndpoint = process.env.OTEL_EXPORTER_OTLP_ENDPOINT || 'http://192.168.1.157:4317';
 const exporter = new OTLPTraceExporter({
-  url: 'http://localhost:4317/v1/traces', // OTLP/HTTP endpoint for traces
+  url: `${otlpEndpoint}/v1/traces`, // OTLP/HTTP endpoint for traces
 });
 
 // Add the span processor to the provider
