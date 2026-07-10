@@ -12,19 +12,25 @@ import { NonogramBoard } from '@/games/_renderers/NonogramBoard';
 import { NumberBoard } from '@/games/_renderers/NumberBoard';
 import { IntegerProgrammingBoard } from '@/games/_renderers/IntegerProgrammingBoard';
 
-/* eslint-disable @typescript-eslint/no-explicit-any */
-function Board({ game, state, onMove }: { game: PuzzleGame<any, any>; state: any; onMove: (m: any) => void }) {
+interface BoardProps<TState, TMove> {
+  game: PuzzleGame<TState, TMove>;
+  state: TState;
+  onMove: (m: TMove) => void;
+  generated?: Generated<TState, TMove>;
+}
+
+function Board({ game, state, onMove, generated }: BoardProps<any, any>) {
   switch (game.archetype) {
     case 'graph-select':
       return <GraphBoard state={state} onMove={onMove} />;
     case 'set-cover':
       return <SetBoard state={state} onMove={onMove} />;
     case 'graph-path':
-      return <PathBoard state={state} onMove={onMove} />;
+      return <PathBoard state={state} onMove={onMove} generated={generated} />;
     case 'logic-assignment':
       return <AssignmentBoard state={state} onMove={onMove} />;
     case 'nonogram':
-      return <NonogramBoard state={state} onMove={onMove} />;
+      return <NonogramBoard state={state} onMove={onMove} generated={generated} />;
     case 'number-packing':
       return <NumberBoard state={state} onMove={onMove} />;
     case 'integer-programming':
