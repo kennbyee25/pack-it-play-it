@@ -30,7 +30,7 @@ function Board({ game, state, onMove, generated }: BoardProps<any, any>) {
     case 'logic-assignment':
       return <AssignmentBoard state={state} onMove={onMove} />;
     case 'nonogram':
-      return <NonogramBoard state={state} onMove={onMove} generated={generated} />;
+      return <NonogramBoard state={state} onMove={onMove}/>;
     case 'number-packing':
       return <NumberBoard state={state} onMove={onMove} />;
     case 'integer-programming':
