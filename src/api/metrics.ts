@@ -1,9 +1,7 @@
-import type { APIRoute } from 'astro';
-
 // Simple in-memory counter for demo purposes
 let gameLoadCount = 0;
 
-export const GET: APIRoute = () => {
+export const GET = (): Response => {
   // Increment the counter (in a real app, this would be done when a game is loaded)
   gameLoadCount += 1;
   
