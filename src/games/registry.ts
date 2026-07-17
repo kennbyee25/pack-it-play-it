@@ -27,7 +27,9 @@ const modules = import.meta.glob('./*/index.ts', { eager: true });
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 export const GAMES: PuzzleGame<any, any>[] = Object.values(modules)
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   .map((mod) => Object.values(mod as Record<string, unknown>).find(isPuzzleGame))
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   .filter((g): g is PuzzleGame<any, any> => Boolean(g))
   .sort((a, b) => a.id.localeCompare(b.id));
 

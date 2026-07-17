@@ -10,6 +10,7 @@ export const SOLVER_GAME_IDS = Object.keys(SPECS);
 export const hasSolver = (gameId: string): boolean => gameId in SPECS;
 
 // Get a game + its search space, or undefined if no solver is registered.
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
 export function getGameSolvers(gameId: string): GameSolvers<any, any> | undefined {
   const spec = SPECS[gameId];
   const game = getGame(gameId);
@@ -21,6 +22,7 @@ export function getGameSolvers(gameId: string): GameSolvers<any, any> | undefine
 export function getSolvers(
   gameId: string,
   rng: Rng = makeRng(),
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
 ): { bruteForce: Solver<any>; random: Solver<any> } | undefined {
   const gs = getGameSolvers(gameId);
   if (!gs) return undefined;
