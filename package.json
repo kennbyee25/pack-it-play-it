@@ -70,7 +70,7 @@
     "@opentelemetry/instrumentation-http": "^1.0.0",
     "@opentelemetry/instrumentation-express": "^1.0.0",
     "@opentelemetry/exporter-trace-otlp-grpc": "^1.0.0",
-    "@opentelemetry/sdk-metrics": "^1.0.0",
+    "@opentelemetry/sdk-metrics": "^1.0.0"
   },
   "devDependencies": {
     "@eslint/js": "^9.32.0",
