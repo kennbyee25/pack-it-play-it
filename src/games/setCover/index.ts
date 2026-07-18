@@ -79,10 +79,22 @@ export const setCover: PuzzleGame<SetCoverState, SetCoverMove> = {
   },
 
   progress(state) {
+    console.log('setCover progress state:', state);
+    if (!state || !state.universe) {
+      console.log('state or universe is undefined');
+      return 0;
+    }
     const covered = new Set<number>();
     state.subsets.forEach((s, i) => {
-      if (state.selected[i]) s.forEach((e) => covered.add(e));
+      if (state.selected[i]) s.forEach((e) => {
+        console.log('adding', e, 'typeof e:', typeof e);
+        covered.add(e);
+      });
     });
+    console.log('covered.size:', covered.size, 'universe.length:', state.universe.length);
+    if (state.universe.length === 0) {
+      return 0;
+    }
     return Math.round((covered.size / state.universe.length) * 100);
   },
 };
