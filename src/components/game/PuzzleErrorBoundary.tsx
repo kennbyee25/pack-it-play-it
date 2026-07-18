@@ -27,7 +27,7 @@ export class PuzzleErrorBoundary extends Component<Props, State> {
     // eslint-disable-next-line no-console
     console.error('[pip] puzzle render crashed', {
       message: error.message,
-      ...this.props.context,
+      ...(this.props.context ?? {}),
       componentStack: info.componentStack,
     });
   }

@@ -2,6 +2,7 @@ import type { BoardProps } from './types';
 
 // set-cover archetype. Toggle subset cards; covered universe elements light up.
 // Accepts any set-game state with universe/subsets/k/selected (+ optional instruction).
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
 export function SetBoard({ state, onMove }: BoardProps<any, any>) {
   const covered = new Set<number>();
   state.subsets.forEach((s, i) => {

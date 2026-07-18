@@ -386,7 +386,7 @@ flowchart LR
 
 ---
 
-## MVP 5 — Solver Telemetry (parallel track)
+## MVP 5 — Solver Telemetry (DONE → /dashboard)
 
 > **Status (2026-06-27): ✅ shipped (code); backend needs a Supabase project.** See
 > [telemetry-layer.md](./telemetry-layer.md). Structured trace stream
@@ -403,6 +403,12 @@ to benchmark/train a solver or to mine hard instances.
 
 **Kill criterion:** Captured traces can't reconstruct solves or don't improve any solver
 baseline → the "advance NP-complete solvers" pillar needs rethinking.
+
+**Status:** Implemented. `src/lib/dashboard.ts` fetches JSONL from pip-ingest and
+computes game health, difficulty calibration (Spearman ρ), player summaries, and
+integrity checks. `src/pages/Dashboard.tsx` renders a 5-tab analytics dashboard
+at `/dashboard`. Move-event schema and export already handled by pip-ingest.
+Downstream uses: difficulty oracle, game review candidates, post-solve integrity.
 
 **Scope:** A move-event schema (every `applyMove` with timestamps/context), export, and
 *one* demonstrated downstream use — e.g., replay-verify a solve, or use human-found
