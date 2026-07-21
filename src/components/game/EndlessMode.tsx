@@ -116,27 +116,45 @@ export function EndlessMode({ seed: seedProp }: { seed?: number } = {}) {
 
   // Skill-based difficulty selection (Stage 1 Glicko-lite).
   const rating = ratingsRef.current[item.gameId] ?? DEFAULT_RATING;
-  const prevDifficulty = currentCtxRef.current.difficulty;
+  const prevDifficulty = settings[item.gameId]?.difficulty ?? DIFFICULTY.default;
   const difficulty = selectDifficulty(rating, {
     pTarget: 0.8,
+      prevDifficulty: difficulty,
     prevDifficulty,
     maxJump: 100,
+      jitter: !deterministic,
+    jitter: !deterministic,
   });
   currentCtxRef.current = { gameId: item.gameId, difficulty };
 
   const genSeed = (deterministic ? (fixedSeed as number) : rand) + index * 7919;
 
-  // Regenerate on advance, difficulty change, re-randomize, or uniqueSolution toggle.
+  // Stable puzzle generation: depends only on index and enabled key, NOT on
+  // difficulty — so rating updates mid-puzzle never regenerate the current
+  // puzzle. Difficulty is computed fresh inside the memo from persisted state.
   const generated = useMemo(
-    () =>
-      generateUnique(
-        game,
-        difficulty,
+    () => {
+      const freshItem = schedule[index % schedule.length];
+      const freshGame = getGame(freshItem.gameId);
+      const freshRating = ratingsRef.current[freshItem.gameId] ?? DEFAULT_RATING;
+      const freshPrevDiff = settings[freshItem.gameId]?.difficulty ?? DIFFICULTY.default;
+      const freshDifficulty = selectDifficulty(freshRating, {
+        pTarget: 0.8,
+      prevDifficulty: difficulty,
+        prevDifficulty: freshPrevDiff,
+        maxJump: 100,
+      jitter: !deterministic,
+        jitter: !deterministic,
+      });
+      return generateUnique(
+        freshGame,
+        freshDifficulty,
         makeRng(genSeed),
         { unique: sessionOptions.uniqueSolution },
-      ),
+      );
+    },
     // eslint-disable-next-line react-hooks/exhaustive-deps
-    [game, difficulty, genSeed, sessionOptions.uniqueSolution],
+    [index, enabledKey, sessionOptions.uniqueSolution],
   );
 
   // Adaptive difficulty change is computed on solve but applied on advance, so it
@@ -152,6 +170,20 @@ export function EndlessMode({ seed: seedProp }: { seed?: number } = {}) {
       const newRating = updatePlayer(currentRating, curDiff, 0);
       ratingsRef.current[gameId] = newRating;
       saveRating(gameId, newRating);
+      // Compute next difficulty based on degraded rating (for skips).
+      // In non-deterministic mode this is called on every skip-advance.
+      const nextDiff = selectDifficulty(newRating, {
+        pTarget: 0.8,
+      prevDifficulty: difficulty,
+        prevDifficulty: curDiff,
+        maxJump: 100,
+      jitter: !deterministic,
+        jitter: !deterministic,
+      jitter: !deterministic,
+      });
+      if (nextDiff !== curDiff) {
+        setDifficulty(gameId, nextDiff);
+      }
     }
     currentSolvedRef.current = false;
     const p = pendingAdapt.current;
@@ -205,12 +237,14 @@ export function EndlessMode({ seed: seedProp }: { seed?: number } = {}) {
           (hysteresisRef.current[gameId] ?? 0) + 1;
       }
 
-      if (hysteresisRef.current[gameId] >= HYSTERESIS.threshold) {
+      const hystThreshold = deterministic ? 1 : HYSTERESIS.threshold;
+      if (hysteresisRef.current[gameId] >= hystThreshold) {
         // Select next difficulty based on updated rating
         const nextDiff = selectDifficulty(newRating, {
           pTarget: 0.8,
-          prevDifficulty: difficulty,
+      prevDifficulty: difficulty,
           maxJump: 100,
+      jitter: !deterministic,
         });
         if (nextDiff !== difficulty) {
           pendingAdapt.current = { gameId, difficulty: nextDiff };

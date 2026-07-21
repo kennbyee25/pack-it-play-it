@@ -16,6 +16,8 @@ export interface SelectOptions {
   maxJump?: number;
   /** Exploration jitter as fraction of RD (default 0.5) */
   explorationFactor?: number;
+  /** Enable exploration jitter (default true). Set false for deterministic/e2e mode. */
+  jitter?: boolean;
 }
 
 /**
@@ -38,6 +40,7 @@ export function selectDifficulty(
     prevDifficulty,
     maxJump = 100,
     explorationFactor = 0.5,
+    jitter: enableJitter = true,
   } = options;
 
   // Safeguard pTarget from edge values
@@ -48,9 +51,9 @@ export function selectDifficulty(
 
   // Exploration jitter: uniform in [-explorationFactor * RD, +explorationFactor * RD]
   // When RD is high (uncertain), we explore more; when low, we exploit.
-  const jitter = (Math.random() * 2 - 1) * explorationFactor * rating.rd;
+  const jitterVal = enableJitter ? (Math.random() * 2 - 1) * explorationFactor * rating.rd : 0;
 
-  let D = base + jitter;
+  let D = base + jitterVal;
 
   // Snap to DIFFICULTY step
   D = Math.round(D / DIFFICULTY.step) * DIFFICULTY.step;
