@@ -61,7 +61,7 @@ export const integerProgramming: PuzzleGame<IpState, IpMove> = {
 
     const puzzle: IpState = {
       numVars,
-      assignment: Array(numVars + 1).fill(null),
+      assignment: Array(numVars + 1).fill(false),
       constraints,
     };
 
@@ -80,7 +80,6 @@ export const integerProgramming: PuzzleGame<IpState, IpMove> = {
   },
 
   isSolved(state) {
-    if (state.assignment.slice(1).some((v) => v === null)) return false;
     return state.constraints.every(({ coeffs, bound, op }) => {
       const lhs = evalLhs(coeffs, state.assignment);
       if (op === '≤') return lhs <= bound;
@@ -90,7 +89,6 @@ export const integerProgramming: PuzzleGame<IpState, IpMove> = {
   },
 
   progress(state) {
-    if (state.assignment.slice(1).every((v) => v === null)) return 0;
     if (state.constraints.length === 0) return 100;
     const satisfied = state.constraints.filter(({ coeffs, bound, op }) => {
       const lhs = evalLhs(coeffs, state.assignment);
