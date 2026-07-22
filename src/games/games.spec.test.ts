@@ -4,7 +4,8 @@ import { graphColoring } from './graphColoring';
 import { setCover } from './setCover';
 import { hamiltonian } from './hamiltonian';
 import { threeSat } from './threeSat';
-import { nonogram } from './nonogram';
+import { nonogram, type NonogramState } from './nonogram';
+import { sudoku, type SudokuState } from './sudoku';
 import { DIFFICULTY } from './settings';
 import { applySolution } from './types';
 
@@ -97,5 +98,76 @@ describe('nonogram', () => {
     expect(nonogram.progress(filled)).toBeGreaterThan(0);
     const cleared = nonogram.applyMove(filled, { row: 0, col: 0, value: 0 });
     expect(nonogram.progress(cleared)).toBe(0);
+  });
+});
+
+describe('sudoku', () => {
+  it('size maps from difficulty: D=100→4, D=600→5, D=1100→6, D=1600→7, D=2100→8, D=2500→9', () => {
+    const cases: [number, number][] = [
+      [100, 4], [600, 5], [1100, 6], [1600, 7], [2100, 8], [2500, 9],
+    ];
+    for (const [d, expected] of cases) {
+      const gen = sudoku.generate(d, makeRng(1));
+      expect(gen.puzzle.size).toBe(expected);
+    }
+  });
+
+  it('progress is 0 on a fresh puzzle and 100 when solved', () => {
+    const gen = sudoku.generate(800, makeRng(5));
+    expect(sudoku.progress(gen.puzzle)).toBe(0);
+    expect(sudoku.progress(applySolution(sudoku, gen))).toBe(100);
+  });
+
+  it('placing then clearing a number restores original progress', () => {
+    const gen = sudoku.generate(800, makeRng(6));
+    const playerCells = gen.puzzle.grid.flat().filter((v, i) => !gen.puzzle.givens[Math.floor(i / gen.puzzle.size)][i % gen.puzzle.size]).length;
+    if (playerCells === 0) return;
+    const move = gen.solution[0];
+    const after = sudoku.applyMove(gen.puzzle, move);
+    expect(sudoku.progress(after)).toBeGreaterThan(sudoku.progress(gen.puzzle));
+    const cleared = sudoku.applyMove(after, { ...move, value: 0 });
+    expect(sudoku.progress(cleared)).toBe(sudoku.progress(gen.puzzle));
+  });
+
+  it('given cells reject moves — state is unchanged', () => {
+    const gen = sudoku.generate(800, makeRng(7));
+    const stateStr = JSON.stringify(gen.puzzle);
+    const given = gen.puzzle.givens.flat().findIndex(Boolean);
+    if (given === -1) return;
+    const row = Math.floor(given / gen.puzzle.size);
+    const col = given % gen.puzzle.size;
+    const rejected = sudoku.applyMove(gen.puzzle, { row, col, value: 99 });
+    expect(JSON.stringify(rejected)).toBe(stateStr);
+  });
+
+  it('applyMove with out-of-bounds coordinates returns state unchanged', () => {
+    const gen = sudoku.generate(800, makeRng(8));
+    const stateStr = JSON.stringify(gen.puzzle);
+    expect(JSON.stringify(sudoku.applyMove(gen.puzzle, { row: -1, col: 0, value: 1 }))).toBe(stateStr);
+    expect(JSON.stringify(sudoku.applyMove(gen.puzzle, { row: 0, col: 999, value: 1 }))).toBe(stateStr);
+    expect(JSON.stringify(sudoku.applyMove(gen.puzzle, { row: 0, col: 0, value: 999 }))).toBe(stateStr);
+    expect(JSON.stringify(sudoku.applyMove(gen.puzzle, { row: 0, col: 0, value: -1 }))).toBe(stateStr);
+  });
+
+  it('filling a row with duplicates fails isSolved', () => {
+    const gen = sudoku.generate(800, makeRng(9));
+    let state = gen.puzzle;
+    for (let c = 0; c < state.size; c++) {
+      if (!state.givens[0][c]) {
+        state = sudoku.applyMove(state, { row: 0, col: c, value: 1 });
+        break;
+      }
+    }
+    const dup = sudoku.applyMove(state, { row: 0, col: 1, value: 1 });
+    expect(sudoku.isSolved(dup)).toBe(false);
+  });
+
+  it('countSolutions on a generated puzzle completes within 500ms', () => {
+    const gen = sudoku.generate(2000, makeRng(42));
+    const start = Date.now();
+    const result = sudoku.countSolutions(gen.puzzle, 10);
+    const elapsed = Date.now() - start;
+    expect(result).toBeGreaterThanOrEqual(1);
+    expect(elapsed).toBeLessThan(500);
   });
 });

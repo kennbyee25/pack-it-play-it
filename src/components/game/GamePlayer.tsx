@@ -11,6 +11,7 @@ import { AssignmentBoard } from '@/games/_renderers/AssignmentBoard';
 import { NonogramBoard } from '@/games/_renderers/NonogramBoard';
 import { NumberBoard } from '@/games/_renderers/NumberBoard';
 import { IntegerProgrammingBoard } from '@/games/_renderers/IntegerProgrammingBoard';
+import { SudokuBoard } from '@/games/_renderers/SudokuBoard';
 
 /* eslint-disable @typescript-eslint/no-explicit-any */
 function Board({ game, state, onMove }: { game: PuzzleGame<any, any>; state: any; onMove: (m: any) => void }) {
@@ -29,6 +30,8 @@ function Board({ game, state, onMove }: { game: PuzzleGame<any, any>; state: any
       return <NumberBoard state={state} onMove={onMove} />;
     case 'integer-programming':
       return <IntegerProgrammingBoard state={state} onMove={onMove} />;
+    case 'sudoku':
+      return <SudokuBoard state={state} onMove={onMove} />;
     default:
       return <div>Unsupported game</div>;
   }
