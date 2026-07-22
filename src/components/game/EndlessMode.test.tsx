@@ -55,7 +55,7 @@ describe('EndlessMode (integration)', () => {
 
     // Check that at least one rating was stored
     const ratingKeys = Object.keys(window.localStorage).filter(key =>
-      key.startsWith('pip.skill.rating.')
+      key.startsWith('pip.ratings')
     );
     expect(ratingKeys.length).toBeGreaterThan(0);
 
@@ -63,7 +63,9 @@ describe('EndlessMode (integration)', () => {
     const ratingKey = ratingKeys[0];
     const stored = window.localStorage.getItem(ratingKey);
     expect(stored).toBeTruthy();
-    const rating = JSON.parse(stored!);
+    const ratings = JSON.parse(stored!);
+    const gameId = Object.keys(ratings)[0];
+    const rating = ratings[gameId];
     expect(typeof rating.skill).toBe('number');
     expect(typeof rating.rd).toBe('number');
     expect(rating.rd).toBeLessThan(400); // rd shrank after one recorded outcome
