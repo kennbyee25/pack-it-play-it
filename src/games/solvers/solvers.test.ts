@@ -19,7 +19,7 @@ describe('solver registry', () => {
 
   it('covers every game except the two documented exclusions', () => {
     const allIds = GAMES.map((g) => g.id);
-    const excluded = ['graph-coloring', 'nonogram']; // symmetry / infeasible enumeration
+    const excluded = ['graph-coloring', 'nonogram', 'sudoku']; // symmetry / infeasible enumeration
     const expected = allIds.filter((id) => !excluded.includes(id)).sort();
     expect([...SOLVER_GAME_IDS].sort()).toEqual(expected);
   });

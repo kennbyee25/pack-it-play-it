@@ -37,6 +37,7 @@ export const METADATA: Record<string, GameMetadata> = {
   'subset-sum': { category: 'number', reductionFrom: ['exact-cover'] },
   knapsack: { category: 'number', reductionFrom: ['subset-sum'] },
   partition: { category: 'number', reductionFrom: ['subset-sum'] },
+  sudoku: { category: 'number', reductionFrom: [] },
 };
 
 const FALLBACK: GameMetadata = { category: 'graph', reductionFrom: [] };

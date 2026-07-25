@@ -8,7 +8,8 @@ export type Archetype =
   | 'graph-path'
   | 'logic-assignment'
   | 'integer-programming'
-  | 'nonogram';
+  | 'nonogram'
+  | 'sudoku';
 
 // A generated instance carries the puzzle the player sees plus the hidden
 // solution used to (a) guarantee solvability and (b) drive the conformance tests.
