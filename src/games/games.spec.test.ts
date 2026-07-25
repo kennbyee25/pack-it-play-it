@@ -99,6 +99,56 @@ describe('nonogram', () => {
     const cleared = nonogram.applyMove(filled, { row: 0, col: 0, value: 0 });
     expect(nonogram.progress(cleared)).toBe(0);
   });
+
+  it('countSolutions returns >= 1 for a freshly generated puzzle', () => {
+    for (const seed of [1, 7, 42]) {
+      const gen = nonogram.generate(200, makeRng(seed));
+      expect(nonogram.countSolutions(gen.puzzle, 10)).toBeGreaterThanOrEqual(1);
+    }
+  });
+
+  it('countSolutions never exceeds never exceeds the cap', () => {
+    for (const seed of [1, 2, 3]) {
+      const gen = nonogram.generate(200, makeRng(seed));
+      expect(nonogram.countSolutions(gen.puzzle, 2)).toBeLessThanOrEqual(2);
+    }
+  });
+
+  it('a trivial empty puzzle (no clues) has exactly 1 solution', () => {
+    const empty: NonogramState = {
+      rows: 3, cols: 3,
+      rowClues: [[], [], []], colClues: [[], [], []],
+      grid: [[0, 0, 0], [0, 0, 0], [0, 0, 0]],
+    };
+    expect(nonogram.countSolutions(empty, 10)).toBe(1);
+  });
+
+  it('a contradiction puzzle has 0 solutions', () => {
+    const unsat: NonogramState = {
+      rows: 2, cols: 2,
+      rowClues: [[3], [0]], colClues: [[0], [0]],
+      grid: [[0, 0], [0, 0]],
+    };
+    expect(nonogram.countSolutions(unsat, 10)).toBe(0);
+  });
+
+  it('countSolutions returns 1 for a known unique 1x1 puzzle', () => {
+    const unique: NonogramState = {
+      rows: 1, cols: 1,
+      rowClues: [[1]], colClues: [[1]],
+      grid: [[0]], // unknown
+    };
+    expect(nonogram.countSolutions(unique, 2)).toBe(1);
+  });
+
+  it('countSolutions returns 2 for a known 2x2 puzzle with two solutions', () => {
+    const multi: NonogramState = {
+      rows: 2, cols: 2,
+      rowClues: [[1], [1]], colClues: [[1], [1]],
+      grid: [[0, 0], [0, 0]], // all unknown
+    };
+    expect(nonogram.countSolutions(multi, 10)).toBe(2);
+  });
 });
 
 describe('sudoku', () => {
