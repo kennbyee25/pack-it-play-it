@@ -9,6 +9,7 @@ import { selectChallenge } from '@/games/skill/challenge';
 import { tracer } from '@/telemetry/tracer';
 import { useGameSettings } from '@/hooks/useGameSettings';
 import { useRatings } from '@/hooks/useRatings';
+import { useSessionOptions } from '@/hooks/useSessionOptions';
 import { GamePlayer } from './GamePlayer';
 import { PuzzleErrorBoundary } from './PuzzleErrorBoundary';
 import { SessionSettings } from './SessionSettings';
@@ -75,6 +76,7 @@ export function EndlessMode({ seed: seedProp }: { seed?: number } = {}) {
   // Point selector (replaces the old heuristic adaptDifficulty). A stable rng gives
   // the OCP band its jitter; deterministic/e2e mode omits it for stable runs.
   const { recordOutcome } = useRatings();
+  const { options: sessionOptions, setOption: onSessionOption } = useSessionOptions();
   const ocpRng = useRef(makeRng(((fixedSeed ?? orderSeed) ^ 0x5bd1e995) >>> 0));
   // Per-puzzle outcome flags (reset below). `failed` = the player hit Reset,
   // which counts as a fail even if they later solve it.
@@ -186,6 +188,8 @@ export function EndlessMode({ seed: seedProp }: { seed?: number } = {}) {
         onToggle={setEnabled}
         onDifficulty={setDifficulty}
         onReset={reset}
+        sessionOptions={sessionOptions}
+        onSessionOption={onSessionOption}
       />
       <PuzzleErrorBoundary
         // Remount whenever the displayed game changes identity — not just on

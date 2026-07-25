@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 
 const undirKey = (e: [number, number]) => `${Math.min(e[0], e[1])}-${Math.max(e[0], e[1])}`;
 const dirKey = (e: [number, number]) => `${e[0]}->${e[1]}`;
@@ -9,7 +9,7 @@ const edgeOf = (a: number, b: number): [number, number] => (a < b ? [a, b] : [b,
 //   directed hamiltonian:   state.directed === true — arrowhead edges
 //   steiner tree:           state.terminals present — connect highlighted terminals
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
-export function PathBoard({ state, onMove }: { state: any; onMove: (m: any) => void }) {
+export function PathBoard({ state, onMove, generated }: { state: any; onMove: (m: any) => void; generated?: any }) {
   const size = 320;
   const r = size / 2 - 36;
   const cx = size / 2;
@@ -28,6 +28,12 @@ export function PathBoard({ state, onMove }: { state: any; onMove: (m: any) => v
   const available = new Set(state.edges.map(keyFn));
 
   const [selected, setSelected] = useState<number | null>(null);
+
+useEffect(() => {
+  if (state === generated?.puzzle) {
+    setSelected(null);
+  }
+}, [state, generated]);
 
   const clickNode = (i: number) => {
     if (selected === null) {

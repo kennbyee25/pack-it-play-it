@@ -9,7 +9,7 @@ const openOptions = (page: Page) =>
   page.getByRole('button', { name: /advanced options/i }).click();
 
 const currentGameName = (page: Page) =>
-  page.getByRole('heading').first().textContent();
+  page.getByRole('heading', { level: 2 }).first().textContent();
 
 // A rendered board always exposes a progress readout; its presence is our
 // "the player is alive, not a blank/crashed screen" signal.

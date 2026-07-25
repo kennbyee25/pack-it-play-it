@@ -58,4 +58,23 @@ describe('NonogramBoard (via GamePlayer)', () => {
     expect(screen.getByLabelText('row-clue-0').className).toContain('line-through');
     expect(screen.getByLabelText('col-clue-0').className).toContain('line-through');
   });
+
+  it('reset clears all cells (deselects)', () => {
+    const g = gen(); // difficulty 1000 -> 7x7
+    render(<GamePlayer game={nonogram} generated={g} />);
+    // Fill a couple cells
+    fireEvent.pointerDown(screen.getByLabelText('cell-0-0'), { button: 0 }); // fill
+    fireEvent.pointerDown(screen.getByLabelText('cell-1-1'), { button: 0 }); // fill
+    // Verify cells are filled
+    expect(screen.getByLabelText('cell-0-0')).toHaveClass('bg-piece-teal');
+    expect(screen.getByLabelText('cell-1-1')).toHaveClass('bg-piece-teal');
+    // Reset
+    fireEvent.click(screen.getByRole('button', { name: /reset/i }));
+    // After reset, cells should be back to unknown (no fill)
+    expect(screen.getByLabelText('cell-0-0')).not.toHaveClass('bg-piece-teal');
+    expect(screen.getByLabelText('cell-1-1')).not.toHaveClass('bg-piece-teal');
+    // Clue styling should also reset (not crossed off)
+    expect(screen.getByLabelText('row-clue-0').className).not.toContain('line-through');
+    expect(screen.getByLabelText('col-clue-0').className).not.toContain('line-through');
+  });
 });

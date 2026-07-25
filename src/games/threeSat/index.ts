@@ -29,6 +29,7 @@ const literalTrue = (lit: number, assignment: (boolean | null)[]): boolean | nul
 export const threeSat: PuzzleGame<SatState, SatMove> = {
   id: 'three-sat',
   name: '3-SAT',
+  description: 'Set each variable true or false so that every row has at least one true value.',
   archetype: 'logic-assignment',
 
   generate(difficulty: Difficulty, rng: Rng): Generated<SatState, SatMove> {

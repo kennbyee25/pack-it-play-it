@@ -13,7 +13,7 @@ for (const seed of [1, 2, 3, 7, 42]) {
     for (let step = 0; step < 14; step++) {
       // The board is alive: a game heading + a progress readout are present...
       await expect(page.getByLabel('progress')).toBeVisible();
-      const name = await page.getByRole('heading').first().textContent();
+      const name = await page.getByRole('heading', { level: 2 }).first().textContent();
       if (name) seen.add(name);
       // ...and the puzzle never fell back to the crash boundary.
       await expect(page.getByLabel('puzzle-error')).toHaveCount(0);
