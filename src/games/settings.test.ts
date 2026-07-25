@@ -7,6 +7,8 @@ import {
   difficultyFor,
   setEnabled,
   setDifficulty,
+  selectAll,
+  deselectAll,
   serialize,
   parse,
   sessionKey,
@@ -98,6 +100,33 @@ describe('serialize/parse', () => {
   it('returns null for garbage', () => {
     expect(parse('not json')).toBeNull();
     expect(parse(null)).toBeNull();
+  });
+});
+
+describe('selectAll', () => {
+  it('enables every game', () => {
+    let s = setEnabled(defaultSettings(games), 'a', false);
+    s = setEnabled(s, 'b', false);
+    expect(enabledGameIds(s)).toEqual(['c']);
+    const all = selectAll(s);
+    expect(enabledGameIds(all).sort()).toEqual(['a', 'b', 'c']);
+  });
+});
+
+describe('deselectAll', () => {
+  it('disables every game except the kept one', () => {
+    const s = deselectAll(defaultSettings(games), 'b');
+    expect(enabledGameIds(s)).toEqual(['b']);
+  });
+
+  it('re-enables everything if keeping the only game would empty rotation', () => {
+    const s = deselectAll(defaultSettings([{ id: 'a' }]), 'nonexistent');
+    expect(enabledGameIds(s)).toEqual(['a']);
+  });
+
+  it('falls back to all-enabled when no keepId is given and nothing would be enabled', () => {
+    const s = deselectAll(defaultSettings(games));
+    expect(enabledGameIds(s).sort()).toEqual(['a', 'b', 'c']);
   });
 });
 

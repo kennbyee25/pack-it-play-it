@@ -72,6 +72,32 @@ export function setDifficulty(settings: GameSettings, id: string, value: number)
   return { ...settings, [id]: { ...settings[id], difficulty: clampDifficulty(value) } };
 }
 
+/** Enable every game in settings. */
+export function selectAll(settings: GameSettings): GameSettings {
+  const next = { ...settings };
+  for (const id of Object.keys(next)) {
+    next[id] = { ...next[id], enabled: true };
+  }
+  return next;
+}
+
+/** Disable every game except `keepId` (if provided and valid).
+ *  Falls back to the same guard as setEnabled: never leave the rotation empty. */
+export function deselectAll(settings: GameSettings, keepId?: string): GameSettings {
+  const next = { ...settings };
+  const ids = Object.keys(next);
+  let keepCount = 0;
+  for (const id of ids) {
+    next[id] = { ...next[id], enabled: id === keepId };
+    if (id === keepId) keepCount++;
+  }
+  // If after deselection nothing is enabled, re-enable everything.
+  if (keepCount === 0 || !ids.some((id) => next[id].enabled)) {
+    for (const id of ids) next[id] = { ...next[id], enabled: true };
+  }
+  return next;
+}
+
 export function serialize(settings: GameSettings): string {
   return JSON.stringify(settings);
 }

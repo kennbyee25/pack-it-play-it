@@ -34,7 +34,7 @@ export function EndlessMode({ seed: seedProp }: { seed?: number } = {}) {
   const [fixedSeed] = useState(() => seedProp ?? readSeedParam());
   const deterministic = fixedSeed !== undefined;
 
-  const { settings, setEnabled, setDifficulty, reset } = useGameSettings();
+  const { settings, setEnabled, setDifficulty, reset, selectAll, deselectAll } = useGameSettings();
   const enabledIds = enabledGameIds(settings);
   const enabledKey = enabledIds.join(',');
 
@@ -188,6 +188,9 @@ export function EndlessMode({ seed: seedProp }: { seed?: number } = {}) {
         onToggle={setEnabled}
         onDifficulty={setDifficulty}
         onReset={reset}
+        onSelectAll={selectAll}
+        onDeselectAll={deselectAll}
+        currentGameId={item.gameId}
         sessionOptions={sessionOptions}
         onSessionOption={onSessionOption}
       />
