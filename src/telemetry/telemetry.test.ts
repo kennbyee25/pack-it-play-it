@@ -3,7 +3,7 @@ import { makeRng } from '../games/rng';
 import { getGame, GAME_IDS } from '../games/registry';
 import { applySolution } from '../games/types';
 import { createTracer } from './tracer';
-import { SupabaseSink, HttpSink, NoopSink, makeSink, type TraceSink } from './sink';
+import { SupabaseSink, HttpSink, NoopSink, makeSink, GuardedSink, IDLE_THRESHOLD_MS, ERROR_BURST_THRESHOLD, IDLE_CAP_SECONDS, type TraceSink } from './sink';
 import { replayVerify } from './replay';
 import type { TraceEvent } from './types';
 
@@ -164,5 +164,88 @@ describe('NoopSink', () => {
   it('emit/flush are inert', async () => {
     NoopSink.emit({ type: 'move', sessionId: 's', puzzleId: 'p', ts: 0, moveIndex: 0, move: {}, msSinceStart: 0 });
     await expect(NoopSink.flush()).resolves.toBeUndefined();
+  });
+});
+
+describe('behavioral events', () => {
+  it('tracer emits idle event', () => {
+    const { sink, events } = fakeSink();
+    const tracer = createTracer(sink, 's');
+    tracer.puzzleStarted({ index: 0, gameId: 'set-cover', difficulty: 300, genSeed: 1, optimalMoves: 2 });
+    tracer.idle(35_000);
+    expect(events.map(e => e.type)).toContain('idle');
+    const idle = events.find(e => e.type === 'idle');
+    if (idle?.type === 'idle') expect(idle.durationMs).toBe(35_000);
+  });
+
+  it('tracer emits error_burst event', () => {
+    const { sink, events } = fakeSink();
+    const tracer = createTracer(sink, 's');
+    tracer.puzzleStarted({ index: 0, gameId: 'graph-coloring', difficulty: 300, genSeed: 2, optimalMoves: 3 });
+    tracer.errorBurst(3, 'illegal');
+    expect(events.map(e => e.type)).toContain('error_burst');
+    const burst = events.find(e => e.type === 'error_burst');
+    if (burst?.type === 'error_burst') expect(burst.count).toBe(3);
+  });
+
+  it('tracer emits abandon and clears puzzle', () => {
+    const { sink, events } = fakeSink();
+    const tracer = createTracer(sink, 's');
+    tracer.puzzleStarted({ index: 0, gameId: 'subset-sum', difficulty: 300, genSeed: 3, optimalMoves: 1 });
+    tracer.move({ val: 42 });
+    tracer.abandon(12);
+    // abandon should be last event and puzzleId cleared
+    expect(events[events.length - 1].type).toBe('abandon');
+    // subsequent move should be ignored (no active puzzle)
+    tracer.move({ val: 99 });
+    expect(events.filter(e => e.type === 'move')).toHaveLength(1);
+  });
+
+  it('tracer emits hesitation event', () => {
+    const { sink, events } = fakeSink();
+    const tracer = createTracer(sink, 's');
+    tracer.puzzleStarted({ index: 0, gameId: 'clique', difficulty: 200, genSeed: 4, optimalMoves: 1 });
+    tracer.move({ node: 1 });
+    tracer.hesitation(12_000, 1);
+    expect(events.map(e => e.type)).toContain('hesitation');
+    const hesi = events.find(e => e.type === 'hesitation');
+    if (hesi?.type === 'hesitation') expect(hesi.gapMs).toBe(12_000);
+  });
+});
+
+describe('GuardedSink', () => {
+  const ev = (type: TraceEvent['type'], i = 0): TraceEvent => {
+    const base = { sessionId: 's', puzzleId: `s:${i}`, ts: 1000 + i };
+    if (type === 'puzzle_started') return { ...base, type, gameId: 'set-cover', category: 'set' as const, difficulty: 300, genSeed: i, optimalMoves: 2 };
+    if (type === 'move') return { ...base, type, moveIndex: i, move: {}, msSinceStart: 10 };
+    if (type === 'puzzle_ended') return { ...base, type, outcome: 'solved' as const, moves: 2, optimalMoves: 2, seconds: 5, score: 0.9 };
+    return { ...base, type, durationMs: 999 } as TraceEvent;
+  };
+
+  it('drops moves after puzzle_ended (lockOnSolve)', () => {
+    const inner = { emit: vi.fn(), flush: vi.fn() };
+    const guard = new GuardedSink(inner, { lockOnSolve: true });
+    guard.emit(ev('puzzle_started', 0));
+    guard.emit(ev('move', 0));
+    guard.emit(ev('puzzle_ended', 0));
+    guard.emit(ev('move', 1));  // should be dropped
+    expect(inner.emit).toHaveBeenCalledTimes(3);
+  });
+
+  it('suppresses all events when optOut is true', () => {
+    const inner = { emit: vi.fn(), flush: vi.fn() };
+    const guard = new GuardedSink(inner, { optOut: true });
+    guard.emit(ev('move', 0));
+    expect(inner.emit).not.toHaveBeenCalled();
+  });
+});
+
+describe('OTELSink', () => {
+  // Import lazy to avoid crash if OTel isn't loaded
+  it('creates OTELSink without throwing', async () => {
+    const mod = await import('./sink');
+    const sink = new mod.OTELSink();
+    expect(sink).toBeDefined();
+    expect(typeof sink.emit).toBe('function');
   });
 });

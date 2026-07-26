@@ -1,0 +1,28 @@
+{
+  "title": "Pack-it-play-it Telemetry",
+  "tags": ["pip", "np-complete", "otel"],
+  "schemaVersion": 39,
+  "timezone": "browser",
+  "panels": [
+    {
+      "title": "Puzzle Load Rate",
+      "type": "graph",
+      "targets": [{ "expr": "rate(puzzle_started_total[5m])", "legendFormat": "{{game}}" }]
+    },
+    {
+      "title": "Solve Rate by Outcome",
+      "type": "graph",
+      "targets": [{ "expr": "rate(puzzle_ended_total[5m])", "legendFormat": "{{game}} / {{outcome}}" }]
+    },
+    {
+      "title": "Behavioral Events",
+      "type": "graph",
+      "targets": [{ "expr": "rate(behavioral_event_total[5m])", "legendFormat": "{{type}}" }]
+    },
+    {
+      "title": "Game Loads",
+      "type": "stat",
+      "targets": [{ "expr": "sum(game_load_total)" }]
+    }
+  ]
+}

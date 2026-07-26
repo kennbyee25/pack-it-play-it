@@ -27,6 +27,10 @@ export interface Tracer {
   puzzleStarted(info: StartInfo): void;
   move(move: unknown): void;
   puzzleEnded(info: EndInfo): void;
+  idle(durationMs: number): void;
+  errorBurst(count: number, moveType: 'illegal' | 'wasted'): void;
+  abandon(secondsPlayed: number): void;
+  hesitation(gapMs: number, moveIndex: number): void;
   flush(): Promise<void>;
 }
 
@@ -61,6 +65,23 @@ export function createTracer(sink: TraceSink, sessionId: string, now: () => numb
       if (!puzzleId) return;
       send({ type: 'puzzle_ended', ...base(), ...info });
       puzzleId = '';
+    },
+    idle(durationMs) {
+      if (!puzzleId) return;
+      send({ type: 'idle', ...base(), durationMs });
+    },
+    errorBurst(count, moveType) {
+      if (!puzzleId) return;
+      send({ type: 'error_burst', ...base(), count, moveType });
+    },
+    abandon(secondsPlayed) {
+      if (!puzzleId) return;
+      send({ type: 'abandon', ...base(), secondsPlayed });
+      puzzleId = '';
+    },
+    hesitation(gapMs, mi) {
+      if (!puzzleId) return;
+      send({ type: 'hesitation', ...base(), gapMs, moveIndex: mi });
     },
     flush: () => sink.flush(),
   };
