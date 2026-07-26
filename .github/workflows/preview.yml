@@ -4,13 +4,21 @@ on:
   pull_request:
     types: [opened, synchronize, reopened]
   workflow_dispatch:
+    inputs:
+      pr_number:
+        description: 'PR number to deploy'
+        required: true
+        type: string
 
 permissions:
   contents: write
 
 concurrency:
-  group: preview-${{ github.event.pull_request.number }}
+  group: preview-${{ github.event.pull_request.number || inputs.pr_number }}
   cancel-in-progress: false
+
+env:
+  PAGES_BASE: /pack-it-play-it/pr/${{ github.event.pull_request.number || inputs.pr_number }}/
 
 jobs:
   preview:
@@ -32,5 +40,5 @@ jobs:
           github_token: ${{ secrets.GITHUB_TOKEN }}
           publish_dir: ./dist
           publish_branch: gh-pages
-          destination_dir: pr/${{ github.event.pull_request.number }}
+          destination_dir: pr/${{ github.event.pull_request.number || inputs.pr_number }}
           keep_files: true
