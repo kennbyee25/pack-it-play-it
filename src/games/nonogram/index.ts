@@ -229,12 +229,20 @@ export const nonogram: PuzzleGame<NonogramState, NonogramMove> = {
     const rows = size;
     const cols = size;
 
-    // Generate a random solution binary grid
+    // Generate a random solution binary grid with run-clustered fill.
+    // Independent coin-flips (50%) produce scattered cells that often yield
+    // ambiguous clues.  By biasing toward runs (an adjacent-pixel Markov
+    // chain: ~70% stay-filled / ~45% become-filled), the clues contain longer
+    // runs which are far more constraining → many more unique puzzles.
     const solution: number[][] = [];
     for (let r = 0; r < rows; r++) {
       const row: number[] = [];
+      let prevFilled = false;
       for (let c = 0; c < cols; c++) {
-        row.push(rng.next() < 0.5 ? 1 : 0);
+        const p = prevFilled ? 0.7 : 0.45;
+        const val = rng.next() < p ? 1 : 0;
+        row.push(val);
+        prevFilled = val === 1;
       }
       solution.push(row);
     }

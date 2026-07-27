@@ -7,6 +7,8 @@ import {
   serialize,
   setEnabled as setEnabledPure,
   setDifficulty as setDifficultyPure,
+  selectAll as selectAllPure,
+  deselectAll as deselectAllPure,
   defaultSettings,
 } from '@/games/settings';
 
@@ -38,6 +40,8 @@ export function useGameSettings() {
     [],
   );
   const reset = useCallback(() => setSettings(defaultSettings(GAMES)), []);
+  const selectAll = useCallback(() => setSettings((s) => selectAllPure(s)), []);
+  const deselectAll = useCallback((keepId?: string) => setSettings((s) => deselectAllPure(s, keepId)), []);
 
-  return { settings, setEnabled, setDifficulty, reset };
+  return { settings, setEnabled, setDifficulty, reset, selectAll, deselectAll };
 }

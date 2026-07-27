@@ -2,11 +2,34 @@ import { describe, it, expect } from 'vitest';
 import { GAMES, GAME_IDS } from './registry';
 import { getMetadata, METADATA } from './metadata';
 
+const VALID_COMPLEXITY = new Set(['NP-complete', 'NP-hard', 'NP', 'P', 'EXPTIME-complete', 'PSPACE-complete']);
+
 describe('game metadata', () => {
   it('every registered game has metadata with a category', () => {
     for (const g of GAMES) {
       const m = getMetadata(g.id);
       expect(m.category, `${g.id} category`).toBeTruthy();
+    }
+  });
+
+  it('every game has a valid complexity class', () => {
+    for (const g of GAMES) {
+      const m = getMetadata(g.id);
+      expect(VALID_COMPLEXITY.has(m.complexity), `${g.id} complexity: ${m.complexity}`).toBe(true);
+    }
+  });
+
+  it('uniqueSolutions is a boolean on every game', () => {
+    for (const g of GAMES) {
+      const m = getMetadata(g.id);
+      expect(typeof m.uniqueSolutions, `${g.id} uniqueSolutions`).toBe('boolean');
+    }
+  });
+
+  it('every game has at least one display tag', () => {
+    for (const g of GAMES) {
+      const m = getMetadata(g.id);
+      expect(m.displayTags.length, `${g.id} displayTags`).toBeGreaterThan(0);
     }
   });
 

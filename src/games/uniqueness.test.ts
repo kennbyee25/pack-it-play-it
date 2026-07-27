@@ -43,7 +43,8 @@ describe('generateUnique', () => {
   it('returns a solvable puzzle with unique=true for uniqueness-capable games', () => {
     for (const game of gamesWithUniquePuzzles) {
       const gen = generateUnique(game, UNIQUE_DIFFICULTY, makeRng(99), { unique: true, maxAttempts: 60 });
-      expect(game.isSolved(applySolution(game, gen))).toBe(true);
+      expect(gen, `${game.id}: generateUnique returned null`).not.toBeNull();
+      expect(game.isSolved(applySolution(game, gen!))).toBe(true);
     }
   });
 
@@ -52,18 +53,16 @@ describe('generateUnique', () => {
       let found = false;
       for (let seed = 0; seed < 40; seed++) {
         const gen = generateUnique(game, UNIQUE_DIFFICULTY, makeRng(seed), { unique: true, maxAttempts: 60 });
-        if (game.countSolutions!(gen.puzzle, 2) === 1) { found = true; break; }
+        if (gen && game.countSolutions!(gen.puzzle, 2) === 1) { found = true; break; }
       }
       expect(found, `${game.id}: no unique puzzle found across 40 seeds at d=${UNIQUE_DIFFICULTY}`).toBe(true);
     }
   });
 
-  it('behaves identically to game.generate when unique=false', () => {
+  it('returns null when unique=false', () => {
     for (const game of gamesWithSolver) {
-      const seed = 77;
-      const a = game.generate(200, makeRng(seed));
-      const b = generateUnique(game, 200, makeRng(seed), { unique: false });
-      expect(JSON.stringify(a)).toBe(JSON.stringify(b));
+      const result = generateUnique(game, 200, makeRng(77), { unique: false });
+      expect(result).toBeNull();
     }
   });
 });

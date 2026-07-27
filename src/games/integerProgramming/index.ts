@@ -8,6 +8,7 @@ export interface IpState {
   assignment: (boolean | null)[]; // index 0 unused; 1..numVars
   constraints: { coeffs: number[]; bound: number; op: '≤' | '≥' | '=' }[];
   // coeffs[i] is the coefficient for variable (i+1), length = numVars
+  touched: boolean; // false until the player makes their first move
 }
 export interface IpMove {
   variable: number; // 1..numVars
@@ -61,8 +62,9 @@ export const integerProgramming: PuzzleGame<IpState, IpMove> = {
 
     const puzzle: IpState = {
       numVars,
-      assignment: Array(numVars + 1).fill(null),
+      assignment: Array(numVars + 1).fill(false),
       constraints,
+      touched: false,
     };
 
     const solution: IpMove[] = Array.from({ length: numVars }, (_, i) => ({
@@ -76,7 +78,7 @@ export const integerProgramming: PuzzleGame<IpState, IpMove> = {
   applyMove(state, move) {
     const assignment = [...state.assignment];
     assignment[move.variable] = move.value;
-    return { ...state, assignment };
+    return { ...state, assignment, touched: true };
   },
 
   isSolved(state) {
@@ -90,7 +92,7 @@ export const integerProgramming: PuzzleGame<IpState, IpMove> = {
   },
 
   progress(state) {
-    if (state.assignment.slice(1).every((v) => v === null)) return 0;
+    if (!state.touched) return 0;
     if (state.constraints.length === 0) return 100;
     const satisfied = state.constraints.filter(({ coeffs, bound, op }) => {
       const lhs = evalLhs(coeffs, state.assignment);
