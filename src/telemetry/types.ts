@@ -39,6 +39,28 @@ export interface PuzzleEnded extends BaseEvent {
   score: number; // scoreOutcome(...) ∈ [0,1]
 }
 
-export type TraceEvent = PuzzleStarted | MoveEvent | PuzzleEnded;
+export interface IdleEvent extends BaseEvent {
+  type: 'idle';
+  durationMs: number; // ms since the last move
+}
+
+export interface ErrorBurstEvent extends BaseEvent {
+  type: 'error_burst';
+  count: number; // consecutive illegal/wasted moves
+  moveType: 'illegal' | 'wasted';
+}
+
+export interface AbandonEvent extends BaseEvent {
+  type: 'abandon';
+  secondsPlayed: number;
+}
+
+export interface HesitationEvent extends BaseEvent {
+  type: 'hesitation';
+  gapMs: number; // inter-move gap
+  moveIndex: number; // the move that followed the pause
+}
+
+export type TraceEvent = PuzzleStarted | MoveEvent | PuzzleEnded | IdleEvent | ErrorBurstEvent | AbandonEvent | HesitationEvent;
 
 export const makePuzzleId = (sessionId: string, index: number): string => `${sessionId}:${index}`;
