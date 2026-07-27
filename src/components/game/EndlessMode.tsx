@@ -3,6 +3,7 @@ import { getGame } from '@/games/registry';
 import { buildSchedule } from '@/games/scheduler';
 import { makeRng } from '@/games/rng';
 import { DIFFICULTY, enabledGameIds } from '@/games/settings';
+import { generateUnique } from '@/games/uniqueness';
 import { type SolveMetrics } from '@/games/adaptive';
 import { scoreOutcome } from '@/games/skill/scorer';
 import { selectChallenge } from '@/games/skill/challenge';
@@ -63,20 +64,33 @@ export function EndlessMode({ seed: seedProp }: { seed?: number } = {}) {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [enabledKey]);
 
+  const { options: sessionOptions, setOption: onSessionOption } = useSessionOptions();
+  // Ref for the unique-solution toggle so the generated useMemo can read the
+  // latest value without being a dependency (which would regenerate mid-puzzle).
+  const uniqueSolutionRef = useRef(sessionOptions.uniqueSolution);
+  useEffect(() => { uniqueSolutionRef.current = sessionOptions.uniqueSolution; }, [sessionOptions.uniqueSolution]);
+
   const item = schedule[index % schedule.length];
   const game = getGame(item.gameId);
   const difficulty = settings[item.gameId]?.difficulty ?? DIFFICULTY.default;
   const genSeed = (deterministic ? (fixedSeed as number) : rand) + index * 7919;
 
   // Regenerate on advance, on difficulty change (same rotation position), or on
-  // re-randomize — but never just because options re-rendered.
-  const generated = useMemo(() => game.generate(difficulty, makeRng(genSeed)), [game, difficulty, genSeed]);
+  // re-randomize — but never just because options re-rendered. When the
+  // unique-solution toggle is on, use generateUnique which retries until the
+  // puzzle has exactly one solution, falling back to a plain generate.
+  const generated = useMemo(() => {
+    const rng = makeRng(genSeed);
+    if (uniqueSolutionRef.current && typeof game.countSolutions === 'function') {
+      return generateUnique(game, difficulty, rng, { unique: true }) ?? game.generate(difficulty, makeRng(genSeed ^ 0x5eed));
+    }
+    return game.generate(difficulty, rng);
+  }, [game, difficulty, genSeed]);
 
   // Per-game Glicko ratings drive the next difficulty via the Optimal Challenge
   // Point selector (replaces the old heuristic adaptDifficulty). A stable rng gives
   // the OCP band its jitter; deterministic/e2e mode omits it for stable runs.
   const { recordOutcome } = useRatings();
-  const { options: sessionOptions, setOption: onSessionOption } = useSessionOptions();
   const ocpRng = useRef(makeRng(((fixedSeed ?? orderSeed) ^ 0x5bd1e995) >>> 0));
   // Per-puzzle outcome flags (reset below). `failed` = the player hit Reset,
   // which counts as a fail even if they later solve it.
