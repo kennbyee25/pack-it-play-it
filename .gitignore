@@ -37,3 +37,7 @@ dist-ssr
 # Python
 __pycache__/
 *.pyc
+
+# Core dumps
+core
+core.*

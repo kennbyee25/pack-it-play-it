@@ -4,7 +4,7 @@ import { runTransferExperiment, type ExperimentConfig } from './transfer';
 
 const base: ExperimentConfig = {
   nAgents: 300,
-  trainGames: ['set-cover', 'subset-sum'],
+  trainGames: ['set-cover', 'subset-sum', 'dominating-set', 'feedback-vertex-set', 'x3c', 'nae-3sat'],
   heldOut: 'vertex-cover',
   doseTrain: 25,
   probes: 30,

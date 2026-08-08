@@ -6,6 +6,10 @@ import { hamiltonian } from './hamiltonian';
 import { threeSat } from './threeSat';
 import { nonogram, type NonogramState } from './nonogram';
 import { sudoku, type SudokuState } from './sudoku';
+import { dominatingSet } from './dominatingSet';
+import { feedbackVertexSet } from './feedbackVertexSet';
+import { x3c } from './x3c';
+import { nae3Sat, type Nae3SatState } from './nae3Sat';
 import { DIFFICULTY } from './settings';
 import { applySolution } from './types';
 
@@ -219,5 +223,139 @@ describe('sudoku', () => {
     const elapsed = Date.now() - start;
     expect(result).toBeGreaterThanOrEqual(1);
     expect(elapsed).toBeLessThan(500);
+  });
+});
+
+describe('dominatingSet', () => {
+  it('is unsolved with nothing selected and rejects over-budget selections', () => {
+    const gen = dominatingSet.generate(1000, makeRng(10));
+    expect(dominatingSet.isSolved(gen.puzzle)).toBe(false);
+    // Selecting every node always exceeds the budget (n > k for all difficulties).
+    if (gen.puzzle.n <= gen.puzzle.k) return;
+    let all = gen.puzzle;
+    for (let node = 0; node < gen.puzzle.n; node++) all = dominatingSet.applyMove(all, { node });
+    expect(dominatingSet.isSolved(all)).toBe(false);
+    expect(dominatingSet.progress(all)).toBe(0); // over-budget penalty
+  });
+
+  it('toggles a node off when clicked twice', () => {
+    const gen = dominatingSet.generate(1000, makeRng(11));
+    const move = gen.solution[0];
+    const on = dominatingSet.applyMove(gen.puzzle, move);
+    expect(on.selected[move.node]).toBe(true);
+    const off = dominatingSet.applyMove(on, move);
+    expect(off.selected[move.node]).toBe(false);
+  });
+});
+
+describe('feedbackVertexSet', () => {
+  it('is unsolved with nothing selected (generated graphs always contain a cycle)', () => {
+    // At low difficulty the spanning-cycle guarantee kicks in: n=5 with a full
+    // 5-cycle, so the untouched graph is cyclic and the empty set is no FVS.
+    const gen = feedbackVertexSet.generate(DIFFICULTY.min, makeRng(12));
+    expect(feedbackVertexSet.isSolved(gen.puzzle)).toBe(false);
+    expect(feedbackVertexSet.progress(gen.puzzle)).toBe(0);
+  });
+
+  it('removing the planted set leaves an acyclic graph within budget', () => {
+    const gen = feedbackVertexSet.generate(1000, makeRng(13));
+    const solved = applySolution(feedbackVertexSet, gen);
+    expect(feedbackVertexSet.isSolved(solved)).toBe(true);
+    expect(solved.selected.filter(Boolean).length).toBeLessThanOrEqual(solved.k);
+  });
+
+  it('toggles a node off when clicked twice', () => {
+    const gen = feedbackVertexSet.generate(1000, makeRng(14));
+    const move = gen.solution[0];
+    const on = feedbackVertexSet.applyMove(gen.puzzle, move);
+    expect(on.selected[move.node]).toBe(true);
+    const off = feedbackVertexSet.applyMove(on, move);
+    expect(off.selected[move.node]).toBe(false);
+  });
+});
+
+describe('x3c', () => {
+  it('is unsolved while the universe is only partially covered', () => {
+    const gen = x3c.generate(1000, makeRng(15));
+    const partial = x3c.applyMove(gen.puzzle, gen.solution[0]);
+    expect(x3c.isSolved(partial)).toBe(false);
+    expect(x3c.progress(partial)).toBeLessThan(100);
+  });
+
+  it('rejects a selection that exceeds exactly k subsets', () => {
+    const gen = x3c.generate(1000, makeRng(16));
+    const planted = new Set(gen.solution.map((m) => m.subsetIndex));
+    const extra = gen.puzzle.subsets.findIndex((_, i) => !planted.has(i));
+    if (extra === -1) return; // no decoys to test against
+    let s = gen.puzzle;
+    for (const m of gen.solution) s = x3c.applyMove(s, m);
+    s = x3c.applyMove(s, { subsetIndex: extra });
+    expect(x3c.isSolved(s)).toBe(false);
+  });
+
+  it('every generated subset has exactly 3 elements from the universe', () => {
+    const gen = x3c.generate(1500, makeRng(17));
+    for (const s of gen.puzzle.subsets) {
+      expect(s).toHaveLength(3);
+      for (const el of s) {
+        expect(el).toBeGreaterThanOrEqual(0);
+        expect(el).toBeLessThan(gen.puzzle.universe.length);
+      }
+    }
+  });
+
+  it('toggles a subset off when clicked twice', () => {
+    const gen = x3c.generate(1000, makeRng(18));
+    const move = gen.solution[0];
+    const on = x3c.applyMove(gen.puzzle, move);
+    expect(on.selected[move.subsetIndex]).toBe(true);
+    const off = x3c.applyMove(on, move);
+    expect(off.selected[move.subsetIndex]).toBe(false);
+  });
+});
+
+describe('nae3Sat', () => {
+  it('is unsolved while any variable is unassigned', () => {
+    const gen = nae3Sat.generate(1000, makeRng(19));
+    expect(nae3Sat.isSolved(gen.puzzle)).toBe(false);
+  });
+
+  it('every generated clause has exactly three literals over valid vars', () => {
+    const gen = nae3Sat.generate(1500, makeRng(20));
+    for (const c of gen.puzzle.clauses) {
+      expect(c).toHaveLength(3);
+      for (const lit of c) {
+        expect(Math.abs(lit)).toBeGreaterThanOrEqual(1);
+        expect(Math.abs(lit)).toBeLessThanOrEqual(gen.puzzle.numVars);
+      }
+    }
+  });
+
+  it('rejects a hand-built clause that is all-true (not NAE)', () => {
+    const state: Nae3SatState = {
+      numVars: 3,
+      clauses: [[1, 2, 3]],
+      assignment: [null, true, true, true],
+    };
+    expect(nae3Sat.isSolved(state)).toBe(false);
+    expect(nae3Sat.progress(state)).toBe(0);
+  });
+
+  it('accepts a mixed clause when a negated literal evaluates false', () => {
+    const state: Nae3SatState = {
+      numVars: 3,
+      clauses: [[1, 2, -3]],
+      assignment: [null, true, true, true],
+    };
+    expect(nae3Sat.isSolved(state)).toBe(true);
+    expect(nae3Sat.progress(state)).toBe(100);
+  });
+
+  it('re-applying a variable with a different value updates the assignment', () => {
+    const gen = nae3Sat.generate(1000, makeRng(21));
+    const on = nae3Sat.applyMove(gen.puzzle, { variable: 1, value: true });
+    expect(on.assignment[1]).toBe(true);
+    const off = nae3Sat.applyMove(on, { variable: 1, value: false });
+    expect(off.assignment[1]).toBe(false);
   });
 });

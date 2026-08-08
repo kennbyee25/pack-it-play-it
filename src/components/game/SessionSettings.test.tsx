@@ -22,7 +22,8 @@ describe('SessionSettings', () => {
     render(<SessionSettings {...defaultProps} />);
     open();
     for (const g of GAMES) {
-      expect(screen.getByRole('checkbox', { name: new RegExp(`enable ${g.name}`, 'i') })).toBeInTheDocument();
+      const escapedName = g.name.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+      expect(screen.getByRole('checkbox', { name: new RegExp(`^enable ${escapedName}$`, 'i') })).toBeInTheDocument();
     }
   });
 

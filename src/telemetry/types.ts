@@ -21,6 +21,7 @@ export interface PuzzleStarted extends BaseEvent {
   difficulty: number;
   genSeed: number; // reconstruction key
   optimalMoves: number; // planted solution length
+  reductionFrom: string[]; // classical reduction parents (P4 metadata)
 }
 
 export interface MoveEvent extends BaseEvent {

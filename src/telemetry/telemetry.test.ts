@@ -135,6 +135,7 @@ describe('replay-verify (faithful capture)', () => {
       difficulty,
       genSeed,
       optimalMoves: gen.solution.length,
+      reductionFrom: [],
     };
     const moves: TraceEvent[] = gen.solution.map((m, i) => ({
       type: 'move',
@@ -216,7 +217,7 @@ describe('behavioral events', () => {
 describe('GuardedSink', () => {
   const ev = (type: TraceEvent['type'], i = 0): TraceEvent => {
     const base = { sessionId: 's', puzzleId: `s:${i}`, ts: 1000 + i };
-    if (type === 'puzzle_started') return { ...base, type, gameId: 'set-cover', category: 'set' as const, difficulty: 300, genSeed: i, optimalMoves: 2 };
+    if (type === 'puzzle_started') return { ...base, type, gameId: 'set-cover', category: 'set' as const, difficulty: 300, genSeed: i, optimalMoves: 2, reductionFrom: [] };
     if (type === 'move') return { ...base, type, moveIndex: i, move: {}, msSinceStart: 10 };
     if (type === 'puzzle_ended') return { ...base, type, outcome: 'solved' as const, moves: 2, optimalMoves: 2, seconds: 5, score: 0.9 };
     return { ...base, type, durationMs: 999 } as TraceEvent;

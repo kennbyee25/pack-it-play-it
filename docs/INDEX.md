@@ -19,6 +19,9 @@ trains humans, tests algorithms, and (eventually) trains/tests AI on NP-complete
 
 - **[plans/np-complete-games.md](./plans/np-complete-games.md)** — the shared `PuzzleGame`
   engine + archetype renderers; how to add games; the Karp-21 breadth-fill.
+- **[plans/garey-johnson-expansion.md](./plans/garey-johnson-expansion.md)** — systematic
+  expansion beyond Karp 21 using the Garey-Johnson catalog: per-game due diligence (type,
+  tags, attributes, reduction graph) wired into calibration, transfer experiment, telemetry.
 - **[plans/solver-layer.md](./plans/solver-layer.md)** — brute-force + random solvers
   (ported from v0) and **unique-solution generation** that rides on the solution counter.
 - **[plans/infinite-adaptive-mode.md](./plans/infinite-adaptive-mode.md)** — endless mode +

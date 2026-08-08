@@ -74,6 +74,7 @@ export const SPECS: Record<string, SolverSpec<any>> = {
   // logic / IP assignment
   'three-sat': assignmentSpec(),
   'integer-programming': assignmentSpec(),
+  'nae-3sat': assignmentSpec(),
   // number-packing (subset of items)
   'subset-sum': subsetSpec(selectedLen),
   partition: subsetSpec(selectedLen),
@@ -84,10 +85,13 @@ export const SPECS: Record<string, SolverSpec<any>> = {
   'exact-cover': subsetSpec(selectedLen),
   'hitting-set': subsetSpec(selectedLen),
   '3d-matching': subsetSpec(selectedLen),
+  'dominating-set': subsetSpec(selectedLen),
+  'x3c': subsetSpec(selectedLen),
   // graph-select (subset of nodes)
   clique: subsetSpec(selectedLen),
   'vertex-cover': subsetSpec(selectedLen),
   'independent-set': subsetSpec(selectedLen),
+  'feedback-vertex-set': subsetSpec(selectedLen),
   'max-cut': binaryColorSpec(),
   // graph-path (subset of edges)
   hamiltonian: edgeSubsetSpec(),

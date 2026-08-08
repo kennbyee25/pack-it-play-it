@@ -10,11 +10,14 @@ const litValue = (lit: number, assignment: (boolean | null)[]): boolean | null =
 };
 
 // logic-assignment archetype. Toggle each variable true/false; satisfied clauses light up.
-export function AssignmentBoard({ state, onMove }: BoardProps<SatState, SatMove>) {
+export function AssignmentBoard({ state, onMove }: BoardProps<SatState & { instruction?: string }, SatMove>) {
+  const defaultInstruction = 'Set each variable so every clause has at least one true literal';
+  const instruction = state.instruction ?? defaultInstruction;
+
   return (
     <div className="flex flex-col items-center gap-4">
       <p className="text-sm text-muted-foreground">
-        Set each variable so every clause has at least one true literal
+        {instruction}
       </p>
       <div className="flex flex-wrap gap-3 justify-center" aria-label="variables">
         {Array.from({ length: state.numVars }).map((_, i) => {
