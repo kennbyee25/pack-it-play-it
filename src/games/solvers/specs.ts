@@ -85,7 +85,6 @@ export const SPECS: Record<string, SolverSpec<any>> = {
   'exact-cover': subsetSpec(selectedLen),
   'hitting-set': subsetSpec(selectedLen),
   '3d-matching': subsetSpec(selectedLen),
-  'steiner-tree': subsetSpec(selectedLen),
   'dominating-set': subsetSpec(selectedLen),
   'x3c': subsetSpec(selectedLen),
   // graph-select (subset of nodes)

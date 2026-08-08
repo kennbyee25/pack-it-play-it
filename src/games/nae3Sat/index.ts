@@ -7,6 +7,7 @@ export interface Nae3SatState {
   numVars: number;
   clauses: [number, number, number][]; // 3-literal clauses, literals are signed 1-indexed vars
   assignment: (boolean | null)[]; // index 0 unused; 1..numVars
+  instruction?: string;
 }
 export interface Nae3SatMove {
   variable: number; // 1..numVars
@@ -67,6 +68,7 @@ export const nae3Sat: PuzzleGame<Nae3SatState, Nae3SatMove> = {
       numVars,
       clauses,
       assignment: Array(numVars + 1).fill(null),
+      instruction: 'Set each variable so every clause has at least one true and one false literal',
     };
     const solution: Nae3SatMove[] = Array.from({ length: numVars }, (_, i) => ({
       variable: i + 1,

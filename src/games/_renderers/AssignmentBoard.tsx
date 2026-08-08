@@ -1,7 +1,7 @@
 import type { SatState, SatMove } from '../threeSat';
 import type { BoardProps } from './types';
 
-const litLabel = (lit: number) => (lit < 0 ? `�¬x${-lit}` : `x${lit}`);
+const litLabel = (lit: number) => (lit < 0 ? `¬x${-lit}` : `x${lit}`);
 
 const litValue = (lit: number, assignment: (boolean | null)[]): boolean | null => {
   const v = assignment[Math.abs(lit)];
@@ -10,7 +10,7 @@ const litValue = (lit: number, assignment: (boolean | null)[]): boolean | null =
 };
 
 // logic-assignment archetype. Toggle each variable true/false; satisfied clauses light up.
-export function AssignmentBoard({ state, onMove }: BoardProps<SatState, SatMove>) {
+export function AssignmentBoard({ state, onMove }: BoardProps<SatState & { instruction?: string }, SatMove>) {
   const defaultInstruction = 'Set each variable so every clause has at least one true literal';
   const instruction = state.instruction ?? defaultInstruction;
 
