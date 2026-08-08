@@ -55,6 +55,13 @@ export const METADATA: Record<string, GameMetadata> = {
     displayTags: ['grid', 'picture'],
     reductionFrom: ['three-sat'],
   },
+  'nae-3sat': {
+    category: 'satisfiability',
+    complexity: 'NP-complete',
+    uniqueSolutions: false,
+    displayTags: ['assignment', 'satisfiability'],
+    reductionFrom: ['three-sat'],
+  },
 
   clique: {
     category: 'graph',
@@ -105,6 +112,13 @@ export const METADATA: Record<string, GameMetadata> = {
     displayTags: ['graph', 'path'],
     reductionFrom: ['directed-hamiltonian'],
   },
+  'feedback-vertex-set': {
+    category: 'graph',
+    complexity: 'NP-complete',
+    uniqueSolutions: false,
+    displayTags: ['graph', 'selection'],
+    reductionFrom: ['vertex-cover'],
+  },
 
   'exact-cover': {
     category: 'set',
@@ -140,6 +154,20 @@ export const METADATA: Record<string, GameMetadata> = {
     uniqueSolutions: false,
     displayTags: ['set', 'matching'],
     reductionFrom: ['exact-cover'],
+  },
+  'dominating-set': {
+    category: 'set',
+    complexity: 'NP-complete',
+    uniqueSolutions: false,
+    displayTags: ['graph', 'selection'],
+    reductionFrom: ['vertex-cover'],
+  },
+  x3c: {
+    category: 'set',
+    complexity: 'NP-complete',
+    uniqueSolutions: false,
+    displayTags: ['set', 'selection'],
+    reductionFrom: ['three-sat'],
   },
   'steiner-tree': {
     category: 'set',

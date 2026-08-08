@@ -47,14 +47,16 @@ export function createTracer(sink: TraceSink, sessionId: string, now: () => numb
       puzzleId = makePuzzleId(sessionId, info.index);
       startedAt = now();
       moveIndex = 0;
+      const metadata = getMetadata(info.gameId);
       send({
         type: 'puzzle_started',
         ...base(),
         gameId: info.gameId,
-        category: getMetadata(info.gameId).category,
+        category: metadata.category,
         difficulty: info.difficulty,
         genSeed: info.genSeed,
         optimalMoves: info.optimalMoves,
+        reductionFrom: metadata.reductionFrom,
       });
     },
     move(move) {
