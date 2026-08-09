@@ -251,7 +251,7 @@ export function SessionSettings({
                       aria-label={`${game.name} difficulty`}
                       value={[s.difficulty]}
                       min={DIFFICULTY.min}
-                      max={DIFFICULTY.max}
+                      max={Math.max(DIFFICULTY.uiMax, s.difficulty)}
                       step={DIFFICULTY.step}
                       disabled={!s.enabled}
                       onValueChange={([v]) => onDifficulty(game.id, v)}

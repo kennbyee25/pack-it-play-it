@@ -1,6 +1,14 @@
 import type { PuzzleGame } from './types';
 
-export const DIFFICULTY = { min: 100, max: Number.MAX_SAFE_INTEGER, step: 50, default: 100 } as const;
+export const DIFFICULTY = {
+  min: 100,
+  // Algorithmic ceiling — intentionally uncapped so AI/algorithmic play can
+  // exceed the historic 2500 cap. The manual slider stays bounded by uiMax.
+  max: Number.MAX_SAFE_INTEGER,
+  uiMax: 2500,
+  step: 50,
+  default: 100,
+} as const;
 
 // Games disabled by default because their difficulty knob fails the A2 monotonicity
 // gate (success rate not monotone with D) — see docs/plans/vision-and-mvp-roadmap.md
