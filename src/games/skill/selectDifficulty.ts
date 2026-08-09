@@ -58,8 +58,10 @@ export function selectDifficulty(
   // Snap to DIFFICULTY step
   D = Math.round(D / DIFFICULTY.step) * DIFFICULTY.step;
 
-  // Clamp to allowed range
-  D = Math.max(DIFFICULTY.min, Math.min(DIFFICULTY.max, D));
+    // Enforce minimum difficulty only; upper bound is intentionally uncapped to allow
+    // AI/algorithmic play beyond the historic 2500 limit.
+    D = Math.max(DIFFICULTY.min, D);
+
 
   // Cap per-puzzle jump to avoid wild swings
   if (prevDifficulty !== undefined) {
@@ -69,7 +71,7 @@ export function selectDifficulty(
     // Re-snap after capping (in case the cap landed off-step)
     D = Math.round(D / DIFFICULTY.step) * DIFFICULTY.step;
     // Re-clamp to global range (in case prevDifficulty was near the edge)
-    D = Math.max(DIFFICULTY.min, Math.min(DIFFICULTY.max, D));
+    D = Math.max(DIFFICULTY.min, D);
   }
 
   return D;

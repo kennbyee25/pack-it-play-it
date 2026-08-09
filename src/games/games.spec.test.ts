@@ -92,7 +92,9 @@ describe('nonogram', () => {
     expect(easiest.rows).toBe(3);
     expect(easiest.cols).toBe(3);
 
-    const hardest = nonogram.generate(DIFFICULTY.max, makeRng(1)).puzzle;
+    // DIFFICULTY.max is intentionally unbounded (AI/algorithmic play), so use the
+    // historic 2500 cap as the "hard" endpoint — grid size must grow with D.
+    const hardest = nonogram.generate(2500, makeRng(1)).puzzle;
     expect(hardest.rows).toBeGreaterThan(easiest.rows);
   });
 

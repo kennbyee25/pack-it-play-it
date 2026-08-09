@@ -76,6 +76,15 @@ describe('SessionSettings', () => {
     expect(onSessionOption).toHaveBeenCalledWith('uniqueSolution', true);
   });
 
+  it('selects tuning algorithm', () => {
+    const onSessionOption = vi.fn();
+    render(<SessionSettings {...defaultProps} onSessionOption={onSessionOption} />);
+    open();
+    const selectEl = screen.getByRole('combobox');
+    fireEvent.change(selectEl, { target: { value: 'naive' } });
+    expect(onSessionOption).toHaveBeenCalledWith('tuningAlgorithm', 'naive');
+  });
+
   it('filters games by search text', () => {
     render(<SessionSettings {...defaultProps} />);
     open();

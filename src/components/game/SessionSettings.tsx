@@ -121,6 +121,21 @@ export function SessionSettings({
               onCheckedChange={(v) => onSessionOption('uniqueSolution', v)}
             />
           </label>
+          <label className="flex items-center justify-between text-sm font-medium">
+            <span>
+              Tuning algorithm
+              <span className="ml-2 text-xs font-normal text-muted-foreground">how difficulty adjusts</span>
+            </span>
+            <select
+              value={sessionOptions.tuningAlgorithm}
+              onChange={(e) => onSessionOption('tuningAlgorithm', e.target.value as 'smart' | 'naive' | 'adaptive')}
+              className="ml-2 text-xs border rounded"
+            >
+              <option value="smart">Smart (Glicko‑lite)</option>
+              <option value="naive">Naive telemetry</option>
+              <option value="adaptive">Adaptive (time‑based)</option>
+            </select>
+          </label>
           <hr className="border-border" />
 
           <p className="text-xs text-muted-foreground">

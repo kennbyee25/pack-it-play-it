@@ -2,7 +2,8 @@ import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { getGame } from '@/games/registry';
 import { buildSchedule } from '@/games/scheduler';
 import { makeRng } from '@/games/rng';
-import { DIFFICULTY, enabledGameIds } from '@/games/settings';
+import { DIFFICULTY, enabledGameIds, clampDifficulty } from '@/games/settings';
+import { adaptDifficulty } from '@/games/adaptive';
 import { generateUnique } from '@/games/uniqueness';
 import { type SolveMetrics } from '@/games/adaptive';
 import { scoreOutcome } from '@/games/skill/scorer';
@@ -131,15 +132,32 @@ export function EndlessMode({ seed: seedProp }: { seed?: number } = {}) {
     const score = scoreOutcome({ solved: cleanSolve, moves, optimalMoves, seconds });
     tracer.puzzleEnded({ outcome, moves, optimalMoves, seconds, score });
 
-    // Update this game's skill rating with the served difficulty + score, then pick
-    // the next difficulty at the Optimal Challenge Point for the updated rating.
-    const rating = recordOutcome(item.gameId, difficulty, score);
-    const next = selectChallenge(rating, deterministic ? undefined : ocpRng.current);
+    // ---- Difficulty selection based on selected tuning algorithm ----
+    let next: number;
+    if (sessionOptions.tuningAlgorithm === 'naive') {
+      // Simple step up/down based on score thresholds.
+      const STEP = DIFFICULTY.step;
+      if (score >= 0.8) {
+        next = clampDifficulty(difficulty + STEP);
+      } else if (score <= 0.2) {
+        next = clampDifficulty(difficulty - STEP);
+      } else {
+        next = difficulty;
+      }
+    } else if (sessionOptions.tuningAlgorithm === 'adaptive') {
+      // Time‑based heuristic from adaptive.ts.
+      const metrics = { moves, optimalMoves, seconds };
+      next = adaptDifficulty(difficulty, metrics);
+    } else {
+      // Smart (Glicko‑lite) – current default.
+      const rating = recordOutcome(item.gameId, difficulty, score);
+      next = selectChallenge(rating, deterministic ? undefined : ocpRng.current);
+    }
     setDifficulty(item.gameId, next);
 
     setIndex((i) => i + 1);
     if (!deterministic) setRand(randSeed());
-  }, [deterministic, setDifficulty, recordOutcome, item.gameId, difficulty]);
+  }, [deterministic, setDifficulty, recordOutcome, item.gameId, difficulty, sessionOptions.tuningAlgorithm]);
 
   // Auto-advance preference (off in deterministic/e2e mode so tests drive it).
   const [autoNext, setAutoNext] = useState(() => {
