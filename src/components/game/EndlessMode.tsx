@@ -162,8 +162,8 @@ export function EndlessMode({ seed: seedProp }: { seed?: number } = {}) {
          next = smartNext();
          break;
        case 'random': {
-         // Pick one of the three base algorithms uniformly at random
-         const r = Math.random();
+         // Pick one of the three base algorithms uniformly at random using the session RNG
+         const r = ocpRng.current.next();
          if (r < 1/3) next = naiveNext;
          else if (r < 2/3) next = adaptiveNext;
          else next = smartNext();
