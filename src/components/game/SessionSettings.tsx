@@ -127,14 +127,16 @@ export function SessionSettings({
               <span className="ml-2 text-xs font-normal text-muted-foreground">how difficulty adjusts</span>
             </span>
             <select
-              value={sessionOptions.tuningAlgorithm}
-              onChange={(e) => onSessionOption('tuningAlgorithm', e.target.value as 'smart' | 'naive' | 'adaptive')}
-              className="ml-2 text-xs border rounded"
-            >
-              <option value="smart">Smart (Glicko‑lite)</option>
-              <option value="naive">Naive telemetry</option>
-              <option value="adaptive">Adaptive (time‑based)</option>
-            </select>
+               value={sessionOptions.tuningAlgorithm}
+               onChange={(e) => onSessionOption('tuningAlgorithm', e.target.value as SessionOptions['tuningAlgorithm'])}
+               className="ml-2 text-xs border rounded"
+             >
+               <option value="smart">Smart (Glicko‑lite)</option>
+               <option value="naive">Naive telemetry</option>
+               <option value="adaptive">Adaptive (time‑based)</option>
+               <option value="random">Random (per‑puzzle)</option>
+               <option value="ensemble">Ensemble (median‑of‑three)</option>
+             </select>
           </label>
           <hr className="border-border" />
 

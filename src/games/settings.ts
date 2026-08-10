@@ -126,13 +126,15 @@ export function parse(json: string | null): Partial<GameSettings> | null {
 
 export interface SessionOptions {
   uniqueSolution: boolean;
-  /**
-   * Difficulty tuning algorithm selection.
-   * 'smart' – current Glicko‑lite rating system (default).
-   * 'naive' – simple telemetry‑based step up/down.
-   * 'adaptive' – time‑based heuristic from adaptive.ts.
-   */
-  tuningAlgorithm: 'smart' | 'naive' | 'adaptive';
+/**
+ * Difficulty tuning algorithm selection.
+ * 'smart' – current Glicko‑lite rating system (default).
+ * 'naive' – simple telemetry‑based step up/down.
+ * 'adaptive' – time‑based heuristic from adaptive.ts.
+ * 'random' – per‑puzzle random selection among smart, naive, adaptive.
+ * 'ensemble' – median‑of‑three of smart, naive, adaptive suggestions.
+ */
+  tuningAlgorithm: 'smart' | 'naive' | 'adaptive' | 'random' | 'ensemble';
 }
 
 export const SESSION_OPTIONS_KEY = 'pip.sessionOptions';
@@ -150,7 +152,14 @@ export function parseSessionOptions(json: string | null): SessionOptions {
     if (!v || typeof v !== 'object') return defaultSessionOptions();
     return {
       uniqueSolution: typeof v.uniqueSolution === 'boolean' ? v.uniqueSolution : false,
-      tuningAlgorithm: v.tuningAlgorithm === 'smart' || v.tuningAlgorithm === 'naive' || v.tuningAlgorithm === 'adaptive' ? v.tuningAlgorithm : 'smart',
+      tuningAlgorithm:
+        v.tuningAlgorithm === 'smart' ||
+        v.tuningAlgorithm === 'naive' ||
+        v.tuningAlgorithm === 'adaptive' ||
+        v.tuningAlgorithm === 'random' ||
+        v.tuningAlgorithm === 'ensemble'
+          ? v.tuningAlgorithm
+          : 'smart',
     };
   } catch {
     return defaultSessionOptions();

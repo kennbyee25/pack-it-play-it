@@ -13,6 +13,7 @@ export interface StartInfo {
   difficulty: number;
   genSeed: number;
   optimalMoves: number;
+  tuner: string;
 }
 
 export interface EndInfo {
