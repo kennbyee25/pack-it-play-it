@@ -384,9 +384,14 @@ flowchart LR
   *Given* matched cohorts under each scheduler, *When* probed on Z, *Then* the analysis
   reports the interleaving effect size with CI (reuses MVP 3 stats harness).
 
+## Difficulty‑tuning Quality‑of‑Life (MVP 0‑2)
+
+The adaptive difficulty system (MVP 0‑2) focuses on measurable difficulty, flow loops, and multi‑game common scaling. These items are purely about player‑experience tuning and are independent of the replay‑simulation framework.
+
 ---
 
 ## MVP 5 — Solver Telemetry (DONE → /dashboard)
+
 
 > **Status (2026-06-27): ✅ shipped (code); backend needs a Supabase project.** See
 > [telemetry-layer.md](./telemetry-layer.md). Structured trace stream

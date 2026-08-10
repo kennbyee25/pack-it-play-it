@@ -23,8 +23,8 @@ describe('adaptDifficulty (time-based)', () => {
     expect(adaptDifficulty(base, { moves: 99, optimalMoves: 5, seconds: 5 })).toBe(base + ADAPT.step);
   });
 
-  it('clamps to the difficulty range', () => {
-    expect(adaptDifficulty(DIFFICULTY.max, { moves: 5, optimalMoves: 5, seconds: 1 })).toBe(DIFFICULTY.max);
+  it('steps above the old max (upper bound intentionally uncapped)', () => {
+    expect(adaptDifficulty(DIFFICULTY.max, { moves: 5, optimalMoves: 5, seconds: 1 })).toBeGreaterThan(DIFFICULTY.max);
     expect(adaptDifficulty(DIFFICULTY.min, { moves: 5, optimalMoves: 5, seconds: 99 })).toBe(DIFFICULTY.min);
   });
 });

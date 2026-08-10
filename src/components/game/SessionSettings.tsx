@@ -121,6 +121,23 @@ export function SessionSettings({
               onCheckedChange={(v) => onSessionOption('uniqueSolution', v)}
             />
           </label>
+          <label className="flex items-center justify-between text-sm font-medium">
+            <span>
+              Tuning algorithm
+              <span className="ml-2 text-xs font-normal text-muted-foreground">how difficulty adjusts</span>
+            </span>
+            <select
+               value={sessionOptions.tuningAlgorithm}
+               onChange={(e) => onSessionOption('tuningAlgorithm', e.target.value as SessionOptions['tuningAlgorithm'])}
+               className="ml-2 text-xs border rounded"
+             >
+               <option value="smart">Smart (Glicko‑lite)</option>
+               <option value="naive">Naive telemetry</option>
+               <option value="adaptive">Adaptive (time‑based)</option>
+               <option value="random">Random (per‑puzzle)</option>
+               <option value="ensemble">Ensemble (median‑of‑three)</option>
+             </select>
+          </label>
           <hr className="border-border" />
 
           <p className="text-xs text-muted-foreground">
@@ -236,7 +253,7 @@ export function SessionSettings({
                       aria-label={`${game.name} difficulty`}
                       value={[s.difficulty]}
                       min={DIFFICULTY.min}
-                      max={DIFFICULTY.max}
+                      max={Math.max(DIFFICULTY.uiMax, s.difficulty)}
                       step={DIFFICULTY.step}
                       disabled={!s.enabled}
                       onValueChange={([v]) => onDifficulty(game.id, v)}

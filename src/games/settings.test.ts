@@ -12,6 +12,8 @@ import {
   serialize,
   parse,
   sessionKey,
+  defaultSessionOptions,
+  parseSessionOptions,
 } from './settings';
 
 const games = [{ id: 'a' }, { id: 'b' }, { id: 'c' }];
@@ -76,9 +78,9 @@ describe('setEnabled guard', () => {
 });
 
 describe('setDifficulty', () => {
-  it('clamps and snaps to the configured range/step', () => {
+  it('snaps to step and enforces the floor (upper bound uncapped)', () => {
     const s = defaultSettings([{ id: 'a' }]);
-    expect(setDifficulty(s, 'a', 99999).a.difficulty).toBe(DIFFICULTY.max);
+    expect(setDifficulty(s, 'a', 99999).a.difficulty).toBe(100000);
     expect(setDifficulty(s, 'a', -10).a.difficulty).toBe(DIFFICULTY.min);
   });
 });
@@ -136,5 +138,20 @@ describe('sessionKey', () => {
     expect(sessionKey(s)).toBe(sessionKey(defaultSettings(games)));
     expect(sessionKey(setEnabled(s, 'b', false))).not.toBe(sessionKey(s));
     expect(sessionKey(setDifficulty(s, 'a', 1500))).not.toBe(sessionKey(s));
+  });
+});
+
+describe('session options', () => {
+  it('defaults tuningAlgorithm to smart', () => {
+    expect(defaultSessionOptions().tuningAlgorithm).toBe('smart');
+  });
+
+  it('falls back to smart for unknown tuningAlgorithm values', () => {
+    expect(parseSessionOptions(JSON.stringify({ uniqueSolution: true, tuningAlgorithm: 'bogus' })).tuningAlgorithm).toBe('smart');
+  });
+
+  it('round-trips a naive selection', () => {
+    const parsed = parseSessionOptions(JSON.stringify({ uniqueSolution: false, tuningAlgorithm: 'naive' }));
+    expect(parsed.tuningAlgorithm).toBe('naive');
   });
 });

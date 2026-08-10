@@ -2,7 +2,8 @@ import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { getGame } from '@/games/registry';
 import { buildSchedule } from '@/games/scheduler';
 import { makeRng } from '@/games/rng';
-import { DIFFICULTY, enabledGameIds } from '@/games/settings';
+import { DIFFICULTY, enabledGameIds, clampDifficulty } from '@/games/settings';
+import { adaptDifficulty } from '@/games/adaptive';
 import { generateUnique } from '@/games/uniqueness';
 import { type SolveMetrics } from '@/games/adaptive';
 import { scoreOutcome } from '@/games/skill/scorer';
@@ -116,9 +117,10 @@ export function EndlessMode({ seed: seedProp }: { seed?: number } = {}) {
       difficulty,
       genSeed,
       optimalMoves: generated.solution.length,
+      tuner: sessionOptions.tuningAlgorithm,
     });
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [generated]);
+  }, [generated, sessionOptions.tuningAlgorithm]);
 
   const advance = useCallback(() => {
     // Close out the current puzzle's trace exactly once (tracer dedups).
@@ -131,15 +133,57 @@ export function EndlessMode({ seed: seedProp }: { seed?: number } = {}) {
     const score = scoreOutcome({ solved: cleanSolve, moves, optimalMoves, seconds });
     tracer.puzzleEnded({ outcome, moves, optimalMoves, seconds, score });
 
-    // Update this game's skill rating with the served difficulty + score, then pick
-    // the next difficulty at the Optimal Challenge Point for the updated rating.
-    const rating = recordOutcome(item.gameId, difficulty, score);
-    const next = selectChallenge(rating, deterministic ? undefined : ocpRng.current);
+     // ---- Difficulty selection based on selected tuning algorithm ----
+     let next: number;
+     // Compute base suggestions for possible use in random/ensemble
+     const naiveNext = (() => {
+       const STEP = DIFFICULTY.step;
+       if (score >= 0.8) {
+         return clampDifficulty(difficulty + STEP);
+       } else if (score <= 0.2) {
+         return clampDifficulty(difficulty - STEP);
+       }
+       return difficulty;
+     })();
+     const adaptiveNext = adaptDifficulty(difficulty, { moves, optimalMoves, seconds });
+     const smartNext = () => {
+       const rating = recordOutcome(item.gameId, difficulty, score);
+       return selectChallenge(rating, deterministic ? undefined : ocpRng.current);
+     };
+
+     switch (sessionOptions.tuningAlgorithm) {
+       case 'naive':
+         next = naiveNext;
+         break;
+       case 'adaptive':
+         next = adaptiveNext;
+         break;
+       case 'smart':
+         next = smartNext();
+         break;
+       case 'random': {
+         // Pick one of the three base algorithms uniformly at random
+         const r = Math.random();
+         if (r < 1/3) next = naiveNext;
+         else if (r < 2/3) next = adaptiveNext;
+         else next = smartNext();
+         break;
+       }
+       case 'ensemble': {
+         // Median of the three suggestions
+         const arr = [naiveNext, adaptiveNext, smartNext()].sort((a, b) => a - b);
+         next = arr[1]; // middle element
+         break;
+       }
+       default:
+         // Fallback to smart
+         next = smartNext();
+     }
     setDifficulty(item.gameId, next);
 
     setIndex((i) => i + 1);
     if (!deterministic) setRand(randSeed());
-  }, [deterministic, setDifficulty, recordOutcome, item.gameId, difficulty]);
+  }, [deterministic, setDifficulty, recordOutcome, item.gameId, difficulty, sessionOptions.tuningAlgorithm]);
 
   // Auto-advance preference (off in deterministic/e2e mode so tests drive it).
   const [autoNext, setAutoNext] = useState(() => {

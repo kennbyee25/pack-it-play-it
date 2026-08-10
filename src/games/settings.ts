@@ -1,6 +1,14 @@
 import type { PuzzleGame } from './types';
 
-export const DIFFICULTY = { min: 100, max: 2500, step: 50, default: 100 } as const;
+export const DIFFICULTY = {
+  min: 100,
+  // Algorithmic ceiling — intentionally uncapped so AI/algorithmic play can
+  // exceed the historic 2500 cap. The manual slider stays bounded by uiMax.
+  max: Number.MAX_SAFE_INTEGER,
+  uiMax: 2500,
+  step: 50,
+  default: 100,
+} as const;
 
 // Games disabled by default because their difficulty knob fails the A2 monotonicity
 // gate (success rate not monotone with D) — see docs/plans/vision-and-mvp-roadmap.md
@@ -21,7 +29,8 @@ type Game = Pick<PuzzleGame<any, any>, 'id'>;
 
 export const clampDifficulty = (v: number): number => {
   const n = Math.round(v / DIFFICULTY.step) * DIFFICULTY.step;
-  return Math.min(DIFFICULTY.max, Math.max(DIFFICULTY.min, n));
+  // Enforce minimum difficulty only; upper bound is uncapped to allow AI/algorithmic play.
+  return Math.max(DIFFICULTY.min, n);
 };
 
 export function defaultSettings(games: readonly Game[]): GameSettings {
@@ -117,11 +126,20 @@ export function parse(json: string | null): Partial<GameSettings> | null {
 
 export interface SessionOptions {
   uniqueSolution: boolean;
+/**
+ * Difficulty tuning algorithm selection.
+ * 'smart' – current Glicko‑lite rating system (default).
+ * 'naive' – simple telemetry‑based step up/down.
+ * 'adaptive' – time‑based heuristic from adaptive.ts.
+ * 'random' – per‑puzzle random selection among smart, naive, adaptive.
+ * 'ensemble' – median‑of‑three of smart, naive, adaptive suggestions.
+ */
+  tuningAlgorithm: 'smart' | 'naive' | 'adaptive' | 'random' | 'ensemble';
 }
 
 export const SESSION_OPTIONS_KEY = 'pip.sessionOptions';
 
-export const defaultSessionOptions = (): SessionOptions => ({ uniqueSolution: false });
+export const defaultSessionOptions = (): SessionOptions => ({ uniqueSolution: false, tuningAlgorithm: 'smart' });
 
 export function serializeSessionOptions(o: SessionOptions): string {
   return JSON.stringify(o);
@@ -134,6 +152,14 @@ export function parseSessionOptions(json: string | null): SessionOptions {
     if (!v || typeof v !== 'object') return defaultSessionOptions();
     return {
       uniqueSolution: typeof v.uniqueSolution === 'boolean' ? v.uniqueSolution : false,
+      tuningAlgorithm:
+        v.tuningAlgorithm === 'smart' ||
+        v.tuningAlgorithm === 'naive' ||
+        v.tuningAlgorithm === 'adaptive' ||
+        v.tuningAlgorithm === 'random' ||
+        v.tuningAlgorithm === 'ensemble'
+          ? v.tuningAlgorithm
+          : 'smart',
     };
   } catch {
     return defaultSessionOptions();

@@ -18,7 +18,7 @@ describe('tracer emits started → moves → ended in order', () => {
     const { sink, events } = fakeSink();
     let t = 1000;
     const tracer = createTracer(sink, 'sess-1', () => t++);
-    tracer.puzzleStarted({ index: 3, gameId: 'set-cover', difficulty: 500, genSeed: 42, optimalMoves: 2 });
+    tracer.puzzleStarted({ index: 3, gameId: 'set-cover', difficulty: 500, genSeed: 42, optimalMoves: 2, tuner: 'smart' });
     tracer.move({ subsetIndex: 0 });
     tracer.move({ subsetIndex: 1 });
     tracer.puzzleEnded({ outcome: 'solved', moves: 2, optimalMoves: 2, seconds: 4, score: 0.9 });
@@ -43,7 +43,7 @@ describe('trace payload carries no PII', () => {
   it('only game/timing/seed fields appear', () => {
     const { sink, events } = fakeSink();
     const tracer = createTracer(sink, 'sess', () => 1);
-    tracer.puzzleStarted({ index: 0, gameId: 'subset-sum', difficulty: 300, genSeed: 7, optimalMoves: 3 });
+    tracer.puzzleStarted({ index: 0, gameId: 'subset-sum', difficulty: 300, genSeed: 7, optimalMoves: 3, tuner: 'smart' });
     const json = JSON.stringify(events);
     expect(json).not.toMatch(/email|name|ip|user|password/i);
   });
@@ -172,7 +172,7 @@ describe('behavioral events', () => {
   it('tracer emits idle event', () => {
     const { sink, events } = fakeSink();
     const tracer = createTracer(sink, 's');
-    tracer.puzzleStarted({ index: 0, gameId: 'set-cover', difficulty: 300, genSeed: 1, optimalMoves: 2 });
+    tracer.puzzleStarted({ index: 0, gameId: 'set-cover', difficulty: 300, genSeed: 1, optimalMoves: 2, tuner: 'smart' });
     tracer.idle(35_000);
     expect(events.map(e => e.type)).toContain('idle');
     const idle = events.find(e => e.type === 'idle');
@@ -182,7 +182,7 @@ describe('behavioral events', () => {
   it('tracer emits error_burst event', () => {
     const { sink, events } = fakeSink();
     const tracer = createTracer(sink, 's');
-    tracer.puzzleStarted({ index: 0, gameId: 'graph-coloring', difficulty: 300, genSeed: 2, optimalMoves: 3 });
+    tracer.puzzleStarted({ index: 0, gameId: 'graph-coloring', difficulty: 300, genSeed: 2, optimalMoves: 3, tuner: 'smart' });
     tracer.errorBurst(3, 'illegal');
     expect(events.map(e => e.type)).toContain('error_burst');
     const burst = events.find(e => e.type === 'error_burst');
@@ -192,7 +192,7 @@ describe('behavioral events', () => {
   it('tracer emits abandon and clears puzzle', () => {
     const { sink, events } = fakeSink();
     const tracer = createTracer(sink, 's');
-    tracer.puzzleStarted({ index: 0, gameId: 'subset-sum', difficulty: 300, genSeed: 3, optimalMoves: 1 });
+    tracer.puzzleStarted({ index: 0, gameId: 'subset-sum', difficulty: 300, genSeed: 3, optimalMoves: 1, tuner: 'smart' });
     tracer.move({ val: 42 });
     tracer.abandon(12);
     // abandon should be last event and puzzleId cleared
@@ -205,7 +205,7 @@ describe('behavioral events', () => {
   it('tracer emits hesitation event', () => {
     const { sink, events } = fakeSink();
     const tracer = createTracer(sink, 's');
-    tracer.puzzleStarted({ index: 0, gameId: 'clique', difficulty: 200, genSeed: 4, optimalMoves: 1 });
+    tracer.puzzleStarted({ index: 0, gameId: 'clique', difficulty: 200, genSeed: 4, optimalMoves: 1, tuner: 'smart' });
     tracer.move({ node: 1 });
     tracer.hesitation(12_000, 1);
     expect(events.map(e => e.type)).toContain('hesitation');
