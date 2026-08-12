@@ -125,23 +125,62 @@ export const sudoku: PuzzleGame<SudokuState, SudokuMove> = {
     const solution: number[][] = Array.from({ length: size }, () => Array(size).fill(0));
     backtrackFill(solution, boxRows, boxCols, useBoxes, rng);
 
-    // Strip cells
-    let keepRatio = 0.75 - (difficulty - 100) / 4800;
-    keepRatio = Math.max(0.25, Math.min(0.75, keepRatio));
+    // Strip cells – we'll attempt several times until we get a unique puzzle.
+    const MAX_ATTEMPTS = 200;
+    for (let attempt = 0; attempt < MAX_ATTEMPTS; attempt++) {
+      let keepRatio = 0.75 - (difficulty - 100) / 4800;
+      keepRatio = Math.max(0.25, Math.min(0.75, keepRatio));
 
-    // Floor at 0.50 for sizes 5,7
-    if (size === 5 || size === 7) {
-      keepRatio = Math.max(0.5, keepRatio);
+      // Floor at 0.50 for sizes 5,7
+      if (size === 5 || size === 7) {
+        keepRatio = Math.max(0.5, keepRatio);
+      }
+
+      const grid: number[][] = [];
+      const givens: boolean[][] = [];
+
+      for (let r = 0; r < size; r++) {
+        const row: number[] = [];
+        const givenRow: boolean[] = [];
+        for (let c = 0; c < size; c++) {
+          if (rng.next() < keepRatio) {
+            row.push(solution[r][c]);
+            givenRow.push(true);
+          } else {
+            row.push(0);
+            givenRow.push(false);
+          }
+        }
+        grid.push(row);
+        givens.push(givenRow);
+      }
+
+      const puzzle: SudokuState = { size, grid, givens, boxRows, boxCols, playerGrid: Array.from({ length: size }, () => Array(size).fill(0)) };
+
+      // If the metadata says the game should have unique solutions, verify it here.
+      // Sudoku metadata sets uniqueSolutions: true, so we enforce uniqueness.
+      if (sudoku.countSolutions(puzzle, 2) === 1) {
+        // Collect solution moves for the given cells.
+        const solutionMoves: SudokuMove[] = [];
+        for (let r = 0; r < size; r++) {
+          for (let c = 0; c < size; c++) {
+            if (!givens[r][c]) {
+              solutionMoves.push({ row: r, col: c, value: solution[r][c] });
+            }
+          }
+        }
+        return { puzzle, solution: solutionMoves };
+      }
     }
 
+    // Fallback: return the first generated puzzle (non‑unique) if attempts exhausted.
     const grid: number[][] = [];
     const givens: boolean[][] = [];
-
     for (let r = 0; r < size; r++) {
       const row: number[] = [];
       const givenRow: boolean[] = [];
       for (let c = 0; c < size; c++) {
-        if (rng.next() < keepRatio) {
+        if (rng.next() < 0.75) {
           row.push(solution[r][c]);
           givenRow.push(true);
         } else {
@@ -152,19 +191,13 @@ export const sudoku: PuzzleGame<SudokuState, SudokuMove> = {
       grid.push(row);
       givens.push(givenRow);
     }
-
     const puzzle: SudokuState = { size, grid, givens, boxRows, boxCols, playerGrid: Array.from({ length: size }, () => Array(size).fill(0)) };
-
-    // Collect solution moves
     const solutionMoves: SudokuMove[] = [];
     for (let r = 0; r < size; r++) {
       for (let c = 0; c < size; c++) {
-        if (!givens[r][c]) {
-          solutionMoves.push({ row: r, col: c, value: solution[r][c] });
-        }
+        if (!givens[r][c]) solutionMoves.push({ row: r, col: c, value: solution[r][c] });
       }
     }
-
     return { puzzle, solution: solutionMoves };
   },
 
