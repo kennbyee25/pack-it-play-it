@@ -25,6 +25,50 @@ function evalLhs(coeffs: number[], assignment: (boolean | null)[]): number {
   return coeffs.reduce((sum, c, i) => sum + c * (assignment[i + 1] ? 1 : 0), 0);
 }
 
+// Plant a random assignment and derive constraints whose bounds are set
+// relative to it, so the planted assignment is always a solution.
+function plantPuzzle(numVars: number, constraintCount: number, rng: Rng): Generated<IpState, IpMove> {
+  const planted: (boolean | null)[] = [null];
+  for (let i = 0; i < numVars; i++) planted.push(rng.next() < 0.5);
+
+  const ops: ('≤' | '≥' | '=')[] = ['≤', '≤', '≥', '≥', '='];
+  const constraints: IpState['constraints'] = [];
+
+  for (let c = 0; c < constraintCount; c++) {
+    const coeffs: number[] = [];
+    for (let i = 0; i < numVars; i++) {
+      let coeff = rng.int(7) - 3; // -3..3
+      if (coeff === 0) coeff = 1;
+      coeffs.push(coeff);
+    }
+    const lhs = evalLhs(coeffs, planted);
+    const op = ops[rng.int(ops.length)];
+    let bound: number;
+    if (op === '≤') {
+      bound = lhs + rng.int(3);
+    } else if (op === '≥') {
+      bound = lhs - rng.int(3);
+    } else {
+      bound = lhs;
+    }
+    constraints.push({ coeffs, bound, op });
+  }
+
+  const puzzle: IpState = {
+    numVars,
+    assignment: Array(numVars + 1).fill(false),
+    constraints,
+    touched: false,
+  };
+
+  const solution: IpMove[] = Array.from({ length: numVars }, (_, i) => ({
+    variable: i + 1,
+    value: planted[i + 1] as boolean,
+  }));
+
+  return { puzzle, solution };
+}
+
 export const integerProgramming: PuzzleGame<IpState, IpMove> = {
   id: 'integer-programming',
   name: 'Integer Programming',
@@ -33,46 +77,13 @@ export const integerProgramming: PuzzleGame<IpState, IpMove> = {
   generate(difficulty: Difficulty, rng: Rng): Generated<IpState, IpMove> {
     const { numVars, constraintCount } = configFor(difficulty);
 
-    // Plant a random 0/1 assignment.
-    const planted: (boolean | null)[] = [null];
-    for (let i = 0; i < numVars; i++) planted.push(rng.next() < 0.5);
-
-    const ops: ('≤' | '≥' | '=')[] = ['≤', '≤', '≥', '≥', '='];
-    const constraints: IpState['constraints'] = [];
-
-    for (let c = 0; c < constraintCount; c++) {
-      const coeffs: number[] = [];
-      for (let i = 0; i < numVars; i++) {
-        let coeff = rng.int(7) - 3; // -3..3
-        if (coeff === 0) coeff = 1;
-        coeffs.push(coeff);
-      }
-      const lhs = evalLhs(coeffs, planted);
-      const op = ops[rng.int(ops.length)];
-      let bound: number;
-      if (op === '≤') {
-        bound = lhs + rng.int(3);
-      } else if (op === '≥') {
-        bound = lhs - rng.int(3);
-      } else {
-        bound = lhs;
-      }
-      constraints.push({ coeffs, bound, op });
+    // The initial assignment is all-false; reject puzzles whose constraints
+    // that assignment already satisfies, or the board is solved on arrival.
+    for (let attempt = 0; attempt < 100; attempt++) {
+      const built = plantPuzzle(numVars, constraintCount, rng);
+      if (!integerProgramming.isSolved(built.puzzle)) return built;
     }
-
-    const puzzle: IpState = {
-      numVars,
-      assignment: Array(numVars + 1).fill(false),
-      constraints,
-      touched: false,
-    };
-
-    const solution: IpMove[] = Array.from({ length: numVars }, (_, i) => ({
-      variable: i + 1,
-      value: planted[i + 1] as boolean,
-    }));
-
-    return { puzzle, solution };
+    return plantPuzzle(numVars, constraintCount, rng);
   },
 
   applyMove(state, move) {
