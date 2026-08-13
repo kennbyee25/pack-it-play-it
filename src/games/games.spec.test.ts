@@ -11,6 +11,7 @@ import { feedbackVertexSet } from './feedbackVertexSet';
 import { x3c } from './x3c';
 import { nae3Sat, type Nae3SatState } from './nae3Sat';
 import { integerProgramming } from './integerProgramming';
+import { threeDMatching } from './threeDMatching';
 import { DIFFICULTY } from './settings';
 import { applySolution } from './types';
 
@@ -378,5 +379,41 @@ describe('integerProgramming', () => {
       const gen = integerProgramming.generate(1000, makeRng(seed));
       expect(integerProgramming.isSolved(applySolution(integerProgramming, gen))).toBe(true);
     }
+  });
+});
+
+describe('threeDMatching', () => {
+  it('is solvable via the planted matching', () => {
+    for (const seed of [1, 7, 42]) {
+      const gen = threeDMatching.generate(600, makeRng(seed));
+      expect(threeDMatching.isSolved(applySolution(threeDMatching, gen))).toBe(true);
+    }
+  });
+
+  it('the planted matching covers every element exactly once', () => {
+    for (const seed of [1, 7, 42]) {
+      const gen = threeDMatching.generate(600, makeRng(seed));
+      const planted = gen.solution.map((m) => gen.puzzle.subsets[m.subsetIndex]);
+      const count = new Map<number, number>();
+      for (const t of planted) for (const e of t) count.set(e, (count.get(e) ?? 0) + 1);
+      expect(count.size, `seed=${seed}`).toBe(gen.puzzle.universe.length);
+      for (const [e, c] of count) {
+        expect(c, `seed=${seed} element=${e}`).toBe(1);
+        expect(gen.puzzle.universe).toContain(e);
+      }
+    }
+  });
+
+  it('the planted matching differs across seeds (always-identical solution regression)', () => {
+    const keys = new Set<string>();
+    for (const seed of [1, 2, 3, 4, 5, 6, 7, 8]) {
+      const gen = threeDMatching.generate(600, makeRng(seed));
+      const key = gen.solution
+        .map((m) => [...gen.puzzle.subsets[m.subsetIndex]].sort((a, b) => a - b).join('|'))
+        .sort()
+        .join(',');
+      keys.add(key);
+    }
+    expect(keys.size).toBeGreaterThan(1);
   });
 });

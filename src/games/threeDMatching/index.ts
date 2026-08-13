@@ -31,8 +31,12 @@ export const threeDMatching: PuzzleGame<ThreeDMatchingState, ThreeDMatchingMove>
     const universeSize = 3 * n;
     const universe = Array.from({ length: universeSize }, (_, i) => i);
 
-    // Plant a perfect matching: diagonal triples {i, n+i, 2n+i}
-    const matchingTriples: number[][] = Array.from({ length: n }, (_, i) => [i, n + i, 2 * n + i]);
+    // Plant a perfect matching: one element from each group per triple, every
+    // element used exactly once — randomized per seed, not a fixed diagonal.
+    const u = rng.shuffle(Array.from({ length: n }, (_, i) => i));
+    const v = rng.shuffle(Array.from({ length: n }, (_, i) => n + i));
+    const w = rng.shuffle(Array.from({ length: n }, (_, i) => 2 * n + i));
+    const matchingTriples: number[][] = Array.from({ length: n }, (_, i) => [u[i], v[i], w[i]]);
 
     // Decoy triples: random {u_i, v_j, w_k} combinations not in the planted matching.
     const plantedKeys = new Set(matchingTriples.map((t) => t.join(',')));
