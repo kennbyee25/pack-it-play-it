@@ -10,7 +10,7 @@ import { dominatingSet } from './dominatingSet';
 import { feedbackVertexSet } from './feedbackVertexSet';
 import { x3c } from './x3c';
 import { nae3Sat, type Nae3SatState } from './nae3Sat';
-import { threeDMatching } from './threeDMatching';
+import { integerProgramming } from './integerProgramming';
 import { DIFFICULTY } from './settings';
 import { applySolution } from './types';
 
@@ -360,6 +360,24 @@ describe('nae3Sat', () => {
     expect(on.assignment[1]).toBe(true);
     const off = nae3Sat.applyMove(on, { variable: 1, value: false });
     expect(off.assignment[1]).toBe(false);
+  });
+});
+
+describe('integerProgramming', () => {
+  it('is not already solved on arrival (all-false assignment must not satisfy constraints)', () => {
+    for (const seed of [1, 2, 3, 5, 8, 13, 21, 42]) {
+      for (const d of [100, 600, 1200, 3000]) {
+        const gen = integerProgramming.generate(d, makeRng(seed));
+        expect(integerProgramming.isSolved(gen.puzzle), `seed=${seed} d=${d}`).toBe(false);
+      }
+    }
+  });
+
+  it('applying the planted solution satisfies isSolved', () => {
+    for (const seed of [1, 7, 42]) {
+      const gen = integerProgramming.generate(1000, makeRng(seed));
+      expect(integerProgramming.isSolved(applySolution(integerProgramming, gen))).toBe(true);
+    }
   });
 });
 
