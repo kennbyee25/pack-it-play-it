@@ -267,10 +267,14 @@ export function EndlessMode({ seed: seedProp }: { seed?: number } = {}) {
           generated={generated}
           canRevealSolution={canRevealSolution}
           onSolved={handleSolved}
-          onMove={(move, moveIndex, msSinceStart) => {
-            lastMoveRef.current = { count: moveIndex + 1, ms: msSinceStart };
-            tracer.move(move);
-          }}
+onMove={(move, moveIndex, msSinceStart) => {
+             // Don't track moves after the puzzle is solved to prevent post_solve_moves > 0
+             if (solvedRef.current) {
+               return;
+             }
+             lastMoveRef.current = { count: moveIndex + 1, ms: msSinceStart };
+             tracer.move(move);
+           }}
           onReset={() => {
             failedRef.current = true;
           }}
