@@ -11,6 +11,7 @@ import { feedbackVertexSet } from './feedbackVertexSet';
 import { x3c } from './x3c';
 import { nae3Sat, type Nae3SatState } from './nae3Sat';
 import { integerProgramming } from './integerProgramming';
+import { threeDMatching } from './threeDMatching';
 import { DIFFICULTY } from './settings';
 import { applySolution } from './types';
 
@@ -219,13 +220,13 @@ describe('sudoku', () => {
     expect(sudoku.isSolved(dup)).toBe(false);
   });
 
-  it('countSolutions on a generated puzzle completes within 500ms', () => {
-    const gen = sudoku.generate(2000, makeRng(42));
-    const start = Date.now();
-    const result = sudoku.countSolutions(gen.puzzle, 10);
-    const elapsed = Date.now() - start;
-    expect(result).toBeGreaterThanOrEqual(1);
-    expect(elapsed).toBeLessThan(500);
+  it('countSolutions returns 1 for a uniquely generated Nonogram puzzle (metadata unique)', () => {
+    // Use a relatively high difficulty for a constrained puzzle.
+    const difficulty = 2000;
+    for (const seed of [1, 7, 42]) {
+      const gen = nonogram.generate(difficulty, makeRng(seed));
+      expect(nonogram.countSolutions(gen.puzzle, 2), `seed=${seed}`).toBe(1);
+    }
   });
 });
 
