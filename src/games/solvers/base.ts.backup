@@ -66,7 +66,6 @@ export function randomSolver<TState, TMove>(
 
 // Count solutions up to `cap` (early-out — we only ever need to tell 0/1/≥2 apart
 // for uniqueness). Returns the exact count when it is < cap.
-// Includes time protection to prevent hanging on large search spaces.
 export function countSolutions<TState, TMove>(
   game: PuzzleGame<TState, TMove>,
   spec: SolverSpec<TState>,
@@ -74,20 +73,11 @@ export function countSolutions<TState, TMove>(
   cap = 2,
 ): number {
   let count = 0;
-  const startTime = Date.now();
-  const TIMEOUT_MS = 450; // Same timeout as sudoku for consistency
-  
   for (const candidate of spec.enumerate(puzzle)) {
-    // Check timeout periodically (every 1000 iterations to avoid overhead)
-    if (count % 1000 === 0 && Date.now() - startTime > TIMEOUT_MS) {
-      return cap; // Return cap to indicate we hit timeout (treated as ">= cap")
-    }
-    
     if (game.isSolved(candidate)) {
       count++;
       if (count >= cap) return count;
     }
   }
-  
   return count;
 }
