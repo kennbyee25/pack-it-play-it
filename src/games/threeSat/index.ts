@@ -34,9 +34,46 @@ export const threeSat: PuzzleGame<SatState, SatMove> = {
 
   generate(difficulty: Difficulty, rng: Rng): Generated<SatState, SatMove> {
     const { numVars, clauses: clauseCount } = configFor(difficulty);
-    // Plant a satisfying assignment, then build clauses satisfied by it.
-    const planted = [null as boolean | null, ...Array.from({ length: numVars }, () => rng.next() < 0.5)];
+    
+    // QoL: Initialize to false and prevent trivial solutions
+    for (let attempt = 0; attempt < 100; attempt++) {
+      // Plant a satisfying assignment, then build clauses satisfied by it.
+      const planted = [null as boolean | null, ...Array.from({ length: numVars }, () => rng.next() < 0.5)];
 
+      const clauses: [number, number, number][] = [];
+      for (let c = 0; c < clauseCount; c++) {
+          // Pick 3 distinct variables.
+          const vars = rng.shuffle(Array.from({ length: numVars }, (_, i) => i + 1)).slice(0, 3);
+          // Guarantee at least one literal is true under the planted assignment.
+          const guaranteed = rng.int(3);
+          const lits = vars.map((v, idx) => {
+              if (idx === guaranteed) {
+                  // sign so the literal is true: positive if planted true, else negative.
+                  return planted[v] ? v : -v;
+              }
+              return rng.next() < 0.5 ? v : -v;
+          }) as [number, number, number];
+          clauses.push(lits);
+      }
+
+      const puzzle: SatState = {
+          numVars,
+          clauses,
+          assignment: Array(numVars + 1).fill(false), // QoL: initialize to false
+      };
+
+      // Check if not trivially solved (QoL: don't generate trivial solutions)
+      if (!threeSat.isSolved(puzzle)) {
+          const solution: SatMove[] = Array.from({ length: numVars }, (_, i) => ({
+              variable: i + 1,
+              value: planted[i + 1] as boolean,
+          }));
+          return { puzzle, solution };
+      }
+    }
+
+    // Fallback: return the last generated puzzle if attempts exhausted
+    const planted = [null as boolean | null, ...Array.from({ length: numVars }, () => rng.next() < 0.5)];
     const clauses: [number, number, number][] = [];
     for (let c = 0; c < clauseCount; c++) {
         // Pick 3 distinct variables.
@@ -53,25 +90,6 @@ export const threeSat: PuzzleGame<SatState, SatMove> = {
         clauses.push(lits);
     }
 
-    // QoL: Initialize to false and prevent trivial solutions
-    for (let attempt = 0; attempt < 100; attempt++) {
-        const puzzle: SatState = {
-            numVars,
-            clauses,
-            assignment: Array(numVars + 1).fill(false), // QoL: initialize to false
-        };
-
-        // Check if not trivially solved (QoL: don't generate trivial solutions)
-        if (!threeSat.isSolved(puzzle)) {
-            const solution: SatMove[] = Array.from({ length: numVars }, (_, i) => ({
-                variable: i + 1,
-                value: planted[i + 1] as boolean,
-            }));
-            return { puzzle, solution };
-        }
-    }
-
-    // Fallback: return the first generated puzzle if attempts exhausted
     const puzzle: SatState = {
         numVars,
         clauses,
@@ -82,7 +100,7 @@ export const threeSat: PuzzleGame<SatState, SatMove> = {
         value: planted[i + 1] as boolean,
     }));
     return { puzzle, solution };
-},
+  },
 
   applyMove(state, move) {
     const assignment = [...state.assignment];
