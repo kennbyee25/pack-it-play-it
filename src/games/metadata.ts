@@ -267,9 +267,10 @@ const FALLBACK: GameMetadata = {
   category: 'graph',
   complexity: 'NP-complete',
   uniqueSolutions: false,
-    playForm: 'long',
+  playForm: 'long',
   displayTags: [],
   reductionFrom: [],
+  retired: false,
 };
 
 export const getMetadata = (id: string): GameMetadata => METADATA[id] ?? FALLBACK;
