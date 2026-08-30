@@ -33,59 +33,9 @@ export const nae3Sat: PuzzleGame<Nae3SatState, Nae3SatMove> = {
 
   generate(difficulty: Difficulty, rng: Rng): Generated<Nae3SatState, Nae3SatMove> {
     const { numVars, clauses: clauseCount } = configFor(difficulty);
-    
-    // QoL: Initialize to false and prevent trivial solutions
-    for (let attempt = 0; attempt < 100; attempt++) {
-      // Plant a random assignment
-      const planted = [null as boolean | null, ...Array.from({ length: numVars }, () => rng.next() < 0.5)];
-
-      const clauses: [number, number, number][] = [];
-      for (let c = 0; c < clauseCount; c++) {
-        // Pick 3 distinct variables
-        const vars = rng.shuffle(Array.from({ length: numVars }, (_, i) => i + 1)).slice(0, 3);
-        
-        // Count how many are true/false under planted assignment
-        const trueCount = vars.reduce((count, v) => count + (literalValue(v, planted) === true ? 1 : 0), 0);
-        const falseCount = vars.reduce((count, v) => count + (literalValue(v, planted) === false ? 1 : 0), 0);
-        // Since we planted a complete assignment, trueCount + falseCount should be 3
-
-        let lits: [number, number, number];
-        
-        if (trueCount > 0 && falseCount > 0) {
-          // Mixed values: assign all same sign to guarantee NAE
-          const allSameSign = rng.next() < 0.5 ? 1 : -1; // 1 for +, -1 for -
-          lits = vars.map(v => allSameSign * v) as [number, number, number];
-        } else {
-          // All same value: need mixed signs
-          // Assign first two same sign, third opposite
-          const sign1 = rng.next() < 0.5 ? 1 : -1;
-          const sign2 = sign1; // same as first
-          const sign3 = -sign1; // opposite
-          lits = [sign1 * vars[0], sign2 * vars[1], sign3 * vars[2]] as [number, number, number];
-        }
-        
-        clauses.push(lits);
-      }
-
-      const puzzle: Nae3SatState = {
-        numVars,
-        clauses,
-        assignment: Array(numVars + 1).fill(false), // QoL: initialize to false
-        instruction: 'Set each variable so every clause has at least one true and one false literal',
-      };
-      
-      // Check if not trivially solved (QoL: don't generate trivial solutions)
-      if (!nae3Sat.isSolved(puzzle)) {
-        const solution: Nae3SatMove[] = Array.from({ length: numVars }, (_, i) => ({
-          variable: i + 1,
-          value: planted[i + 1] as boolean,
-        }));
-        return { puzzle, solution };
-      }
-    }
-    
-    // Fallback: return the last generated puzzle if attempts exhausted
+    // Plant a random assignment
     const planted = [null as boolean | null, ...Array.from({ length: numVars }, () => rng.next() < 0.5)];
+
     const clauses: [number, number, number][] = [];
     for (let c = 0; c < clauseCount; c++) {
       // Pick 3 distinct variables
@@ -95,7 +45,7 @@ export const nae3Sat: PuzzleGame<Nae3SatState, Nae3SatMove> = {
       const trueCount = vars.reduce((count, v) => count + (literalValue(v, planted) === true ? 1 : 0), 0);
       const falseCount = vars.reduce((count, v) => count + (literalValue(v, planted) === false ? 1 : 0), 0);
       // Since we planted a complete assignment, trueCount + falseCount should be 3
-
+      
       let lits: [number, number, number];
       
       if (trueCount > 0 && falseCount > 0) {
@@ -113,11 +63,11 @@ export const nae3Sat: PuzzleGame<Nae3SatState, Nae3SatMove> = {
       
       clauses.push(lits);
     }
-    
+
     const puzzle: Nae3SatState = {
       numVars,
       clauses,
-      assignment: Array(numVars + 1).fill(false),
+      assignment: Array(numVars + 1).fill(null),
       instruction: 'Set each variable so every clause has at least one true and one false literal',
     };
     const solution: Nae3SatMove[] = Array.from({ length: numVars }, (_, i) => ({
@@ -126,6 +76,7 @@ export const nae3Sat: PuzzleGame<Nae3SatState, Nae3SatMove> = {
     }));
     return { puzzle, solution };
   },
+
   applyMove(state, move) {
     const assignment = [...state.assignment];
     assignment[move.variable] = move.value;
