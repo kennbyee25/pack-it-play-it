@@ -114,7 +114,13 @@ export const threeSat: PuzzleGame<SatState, SatMove> = {
   },
 
   progress(state) {
-    if (state.clauses.length === 0) return 100;
+    // If the puzzle is solved, 100% progress.
+    if (this.isSolved(state)) return 100;
+    // Freshly generated boolean puzzles start with all `false` assignments.
+    // Treat a completely `false` assignment as 0% progress.
+    const anyTrue = state.assignment.slice(1).some((v) => v === true);
+    if (!anyTrue) return 0;
+    // Otherwise compute satisfied clause percentage as before.
     const satisfied = state.clauses.filter((c) =>
       c.some((lit) => literalTrue(lit, state.assignment) === true),
     ).length;
