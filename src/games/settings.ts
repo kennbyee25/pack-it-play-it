@@ -134,7 +134,7 @@ export interface SessionOptions {
  * 'random' – per‑puzzle random selection among smart, naive, adaptive.
  * 'ensemble' – median‑of‑three of smart, naive, adaptive suggestions.
  */
-  tuningAlgorithm: 'smart' | 'naive' | 'adaptive' | 'random' | 'ensemble';
+  tuningAlgorithm: 'smart' | 'naive' | 'adaptive' | 'random' | 'ensemble' | 'engagement';
 }
 
 export const SESSION_OPTIONS_KEY = 'pip.sessionOptions';

@@ -2,6 +2,16 @@ import type { PuzzleGame, Generated, Difficulty } from '../types';
 import type { Rng } from '../rng';
 import { normEdge as norm } from '../_shared/graph';
 
+/**
+ * Max Cut game: Given a graph, assign each node to one of two groups (red/teal)
+ * to maximize the number of edges between the groups (the cut).
+ * 
+ * The game plants a random 2-coloring as a reference solution, then builds a
+ * random graph around it. The player's goal is to find a cut that cuts at least
+ * a certain number of edges (the target). The target is set to the planted cut
+ * count minus one to allow non-optimal but still good solutions.
+ */
+
 export interface MaxCutState {
   n: number;
   edges: [number, number][];
@@ -55,6 +65,7 @@ export const maxCut: PuzzleGame<MaxCutState, MaxCutMove> = {
     // Count cut edges for the planted partition
     const cutEdges = edges.filter(([a, b]) => planted[a] !== planted[b]).length;
     // Allow a slightly relaxed target so alternative solutions also win
+    // We subtract 1 from the planted cut count to allow solutions that are not optimal but still good.
     const cutTarget = Math.max(1, cutEdges - 1);
 
     const puzzle: MaxCutState = {

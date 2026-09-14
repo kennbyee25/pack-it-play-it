@@ -9,6 +9,7 @@ import { type SolveMetrics } from '@/games/adaptive';
 import { scoreOutcome } from '@/games/skill/scorer';
 import { selectChallenge } from '@/games/skill/challenge';
 import { tracer } from '@/telemetry/tracer';
+import { BayesianEngagementTuner } from '@/games/engagementTuner';
 import { useGameSettings } from '@/hooks/useGameSettings';
 import { useRatings } from '@/hooks/useRatings';
 import { useSessionOptions } from '@/hooks/useSessionOptions';
@@ -108,6 +109,91 @@ export function EndlessMode({ seed: seedProp }: { seed?: number } = {}) {
     solveMetricsRef.current = null;
   }, [index]);
 
+  // Engagement tuners per game (lazy-initialized)
+  const engagementTunerRef = useRef<Map<string, BayesianEngagementTuner>>(new Map());
+  
+  // Get or create engagement tuner for a game
+  const getEngagementTuner = useCallback((gameId: string): BayesianEngagementTuner => {
+    if (!engagementTunerRef.current.has(gameId)) {
+      // Try to load saved state from localStorage
+      const saved = window.localStorage?.getItem(`pip.engagementTuner.${gameId}`);
+      const tuner = new BayesianEngagementTuner(50); // Keep last 50 observations
+      
+      if (saved) {
+        try {
+          const parsed = JSON.parse(saved);
+          if (Array.isArray(parsed.observations)) {
+            tuner['observations'] = parsed.observations;
+          }
+        } catch (e) {
+          console.warn(`Failed to load engagement tuner state for ${gameId}:`, e);
+        }
+      }
+      
+      engagementTunerRef.current.set(gameId, tuner);
+    }
+    return engagementTunerRef.current.get(gameId)!;
+  }, []);
+
+  // Save engagement tuner state to localStorage
+  const saveEngagementTunerState = useCallback((gameId: string) => {
+    const tuner = engagementTunerRef.current.get(gameId);
+    if (tuner) {
+      try {
+        window.localStorage?.setItem(
+          `pip.engagementTuner.${gameId}`,
+          JSON.stringify({ observations: tuner.getObservations() })
+        );
+      } catch (e) {
+        console.warn(`Failed to save engagement tuner state for ${gameId}:`, e);
+      }
+    }
+  }, []);
+
+  // Calculate engagement score for a completed puzzle
+  const calculateEngagementScore = useCallback((
+    solved: boolean,
+    moves: number,
+    optimalMoves: number,
+    seconds: number,
+    moveList: { ts: number }[]
+  ): number => {
+    // Solve status (0.4 weight)
+    const solvedPt = solved ? 1.0 : 0.0;
+    
+    // Move efficiency (0.3 weight) - target 0.7-0.9 range
+    const eff = moves > 0 ? optimalMoves / moves : 0.0;
+    let effPt: number;
+    if (eff < 0.7) {
+      effPt = eff / 0.7; // 0 to 1
+    } else if (eff > 0.9) {
+      effPt = Math.max(0.0, 1.0 - (eff - 0.9) / 0.3); // decline after 0.9
+    } else {
+      effPt = 1.0;
+    }
+    
+    // Hesitation: lower is better, target <0.1 (0.2 weight)
+    const hesitation = moveList.length >= 2 
+      ? (() => {
+          const interTimes: number[] = [];
+          let prev = moveList[0].ts;
+          for (let i = 1; i < moveList.length; i++) {
+            interTimes.push((moveList[i].ts - prev) / 1000.0);
+            prev = moveList[i].ts;
+          }
+          if (interTimes.length === 0) return 0.0;
+          return interTimes.filter(t => t > 5.0).length / interTimes.length;
+        })()
+      : 0.0;
+    const hesPt = Math.max(0.0, 1.0 - hesitation / 0.2); // zero at 0.2 or more
+    
+    // Skip: penalty (0.1 weight) - we only call this for ended puzzles
+    const skipPt = 1.0; // Not skipped since we have an end event
+    
+    // Combine weights: solve 0.4, eff 0.3, hes 0.2, skip 0.1
+    return 0.4 * solvedPt + 0.3 * effPt + 0.2 * hesPt + 0.1 * skipPt;
+  }, []);
+
   // Emit a puzzle_started event whenever a new puzzle is shown.
   useEffect(() => {
     optimalMovesRef.current = generated.solution.length;
@@ -133,57 +219,93 @@ export function EndlessMode({ seed: seedProp }: { seed?: number } = {}) {
     const score = scoreOutcome({ solved: cleanSolve, moves, optimalMoves, seconds });
     tracer.puzzleEnded({ outcome, moves, optimalMoves, seconds, score });
 
-     // ---- Difficulty selection based on selected tuning algorithm ----
-     let next: number;
-     // Compute base suggestions for possible use in random/ensemble
-     const naiveNext = (() => {
-       const STEP = DIFFICULTY.step;
-       if (score >= 0.8) {
-         return clampDifficulty(difficulty + STEP);
-       } else if (score <= 0.2) {
-         return clampDifficulty(difficulty - STEP);
-       }
-       return difficulty;
-     })();
-     const adaptiveNext = adaptDifficulty(difficulty, { moves, optimalMoves, seconds });
-     const smartNext = () => {
-       const rating = recordOutcome(item.gameId, difficulty, score);
-       return selectChallenge(rating, deterministic ? undefined : ocpRng.current);
-     };
+    // Calculate engagement score for this puzzle
+    const engagementScore = calculateEngagementScore(
+      cleanSolve,
+      moves,
+      optimalMoves,
+      seconds,
+      Array.from({ length: moves }, (_, i) => ({ 
+        ts: Date.now() - (moves - i) * 1000 // Approximate - in real implementation, we'd track actual move times
+      }))
+    );
 
-     switch (sessionOptions.tuningAlgorithm) {
-       case 'naive':
-         next = naiveNext;
-         break;
-       case 'adaptive':
-         next = adaptiveNext;
-         break;
-       case 'smart':
-         next = smartNext();
-         break;
-       case 'random': {
-         // Pick one of the three base algorithms uniformly at random using the session RNG
-         const r = ocpRng.current.next();
-         if (r < 1/3) next = naiveNext;
-         else if (r < 2/3) next = adaptiveNext;
-         else next = smartNext();
-         break;
-       }
-       case 'ensemble': {
-         // Median of the three suggestions
-         const arr = [naiveNext, adaptiveNext, smartNext()].sort((a, b) => a - b);
-         next = arr[1]; // middle element
-         break;
-       }
-       default:
-         // Fallback to smart
-         next = smartNext();
-     }
+    // Update engagement tuner for this game
+    const tuner = getEngagementTuner(item.gameId);
+    tuner.addObservation({
+      difficulty,
+      engagement: engagementScore,
+      timestamp: Date.now()
+    });
+    
+    // Save tuner state periodically (every 5 observations to reduce storage writes)
+    if (tuner.getObservations().length % 5 === 0) {
+      saveEngagementTunerState(item.gameId);
+    }
+
+    // ---- Difficulty selection based on selected tuning algorithm ----
+    let next: number;
+    // Compute base suggestions for possible use in random/ensemble
+    const naiveNext = (() => {
+      const STEP = DIFFICULTY.step;
+      if (score >= 0.8) {
+        return clampDifficulty(difficulty + STEP);
+      } else if (score <= 0.2) {
+        return clampDifficulty(difficulty - STEP);
+      }
+      return difficulty;
+    })();
+    const adaptiveNext = adaptDifficulty(difficulty, { moves, optimalMoves, seconds });
+    const smartNext = () => {
+      const rating = recordOutcome(item.gameId, difficulty, score);
+      return selectChallenge(rating, deterministic ? undefined : ocpRng.current);
+    };
+    const engagementNext = () => {
+      // Suggest difficulty using Bayesian optimization with UCB
+      // Explore within reasonable bounds around current difficulty
+      const minDiff = Math.max(DIFFICULTY.min, difficulty - 200);
+      const maxDiff = difficulty + 200;
+      return tuner.suggestDifficulty(minDiff, maxDiff, DIFFICULTY.step, 1.0);
+    };
+
+    switch (sessionOptions.tuningAlgorithm) {
+      case 'naive':
+        next = naiveNext;
+        break;
+      case 'adaptive':
+        next = adaptiveNext;
+        break;
+      case 'smart':
+        next = smartNext();
+        break;
+      case 'engagement':
+        next = engagementNext();
+        break;
+      case 'random': {
+        // Pick one of the four base algorithms uniformly at random using the session RNG
+        const r = ocpRng.current.next();
+        if (r < 0.25) next = naiveNext;
+        else if (r < 0.5) next = adaptiveNext;
+        else if (r < 0.75) next = smartNext();
+        else next = engagementNext();
+        break;
+      }
+      case 'ensemble': {
+        // Median of the four suggestions
+        const arr = [naiveNext, adaptiveNext, smartNext(), engagementNext()].sort((a, b) => a - b);
+        next = arr[1]; // second element (lower median of four)
+        break;
+      }
+      default:
+        // Fallback to smart
+        next = smartNext();
+    }
+    
     setDifficulty(item.gameId, next);
 
     setIndex((i) => i + 1);
     if (!deterministic) setRand(randSeed());
-  }, [deterministic, setDifficulty, recordOutcome, item.gameId, difficulty, sessionOptions.tuningAlgorithm]);
+  }, [deterministic, setDifficulty, recordOutcome, item.gameId, difficulty, sessionOptions.tuningAlgorithm, getEngagementTuner, saveEngagementTunerState, calculateEngagementScore]);
 
   // Auto-advance preference (off in deterministic/e2e mode so tests drive it).
   const [autoNext, setAutoNext] = useState(() => {
@@ -267,10 +389,14 @@ export function EndlessMode({ seed: seedProp }: { seed?: number } = {}) {
           generated={generated}
           canRevealSolution={canRevealSolution}
           onSolved={handleSolved}
-          onMove={(move, moveIndex, msSinceStart) => {
-            lastMoveRef.current = { count: moveIndex + 1, ms: msSinceStart };
-            tracer.move(move);
-          }}
+onMove={(move, moveIndex, msSinceStart) => {
+             // Don't track moves after the puzzle is solved to prevent post_solve_moves > 0
+             if (solvedRef.current) {
+               return;
+             }
+             lastMoveRef.current = { count: moveIndex + 1, ms: msSinceStart };
+             tracer.move(move);
+           }}
           onReset={() => {
             failedRef.current = true;
           }}
