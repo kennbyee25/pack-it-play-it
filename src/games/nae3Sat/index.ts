@@ -143,11 +143,16 @@ export const nae3Sat: PuzzleGame<Nae3SatState, Nae3SatMove> = {
   },
 
   progress(state) {
-    if (state.clauses.length === 0) return 100;
+    // If the puzzle is solved, 100% progress.
+    if (this.isSolved(state)) return 100;
+    // Freshly generated puzzle starts with all `false` assignments.
+    const anyTrue = state.assignment.slice(1).some((v) => v === true);
+    if (!anyTrue) return 0;
+    // Otherwise compute satisfied clause percentage as before.
     const satisfied = state.clauses.filter((c) => {
-      const values = c.map(lit => literalValue(lit, state.assignment));
-      const trueCount = values.filter(v => v === true).length;
-      const falseCount = values.filter(v => v === false).length;
+      const values = c.map((lit) => literalValue(lit, state.assignment));
+      const trueCount = values.filter((v) => v === true).length;
+      const falseCount = values.filter((v) => v === false).length;
       return trueCount > 0 && falseCount > 0;
     }).length;
     return Math.round((satisfied / state.clauses.length) * 100);
